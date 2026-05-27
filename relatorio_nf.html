@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório — Análise de Notas Fiscais Sintéticas</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,900;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0f0e0c;
+    --surface:  #1a1814;
+    --border:   #2e2b26;
+    --text:     #e8e0d0;
+    --muted:    #7a7060;
+    --accent:   #c84b31;
+    --accent2:  #e8a87c;
+    --green:    #6ab187;
+    --mono:     'DM Mono', monospace;
+    --serif:    'Fraunces', Georgia, serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── BOTÃO PDF ── */
+  .pdf-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 999;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: .75rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    box-shadow: 0 4px 24px rgba(200,75,49,.35);
+    transition: background .2s, transform .15s, box-shadow .2s;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .pdf-btn:hover {
+    background: #a83a22;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(200,75,49,.5);
+  }
+  .pdf-btn:active { transform: translateY(0); }
+  .pdf-btn svg { width: 14px; height: 14px; fill: currentColor; }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 4rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(200,75,49,.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: .75rem;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 1.1;
+    color: var(--text);
+  }
+  header h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent2);
+  }
+  .header-meta {
+    margin-top: 1.25rem;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: .06em;
+  }
+
+  /* ── LAYOUT ── */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 4rem 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.25rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── KPI GRID ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .kpi {
+    background: var(--surface);
+    padding: 1.5rem 1.75rem;
+  }
+  .kpi-label {
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .5rem;
+  }
+  .kpi-value {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 1.7rem;
+    color: var(--text);
+    line-height: 1;
+  }
+  .kpi-value.accent { color: var(--accent); }
+  .kpi-value.green  { color: var(--green); }
+  .kpi-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: .35rem;
+  }
+
+  /* ── PERFORMANCE BLOCK ── */
+  .perf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .perf-item {
+    background: var(--surface);
+    padding: 1.5rem 1.75rem;
+  }
+  .perf-item.highlight { background: #1f1a14; }
+  .perf-label {
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .4rem;
+  }
+  .perf-value {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+  .perf-value.seq { color: var(--muted); }
+  .perf-value.par { color: var(--accent2); }
+  .perf-value.spd { color: var(--accent); }
+  .perf-value.eff { color: var(--green); }
+  .speedup-note {
+    margin-top: .5rem;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── TABLES ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th {
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: .6rem .75rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+  td {
+    padding: .55rem .75rem;
+    border-bottom: 1px solid #1e1c18;
+    vertical-align: middle;
+  }
+  tr.alt td { background: #171510; }
+  td.nome { color: var(--text); }
+  td.num  {
+    font-family: var(--mono);
+    text-align: right;
+    color: var(--accent2);
+  }
+  td.bar-cell { width: 160px; padding-right: 1rem; }
+  .bar {
+    height: 6px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .bar.estado { background: var(--green); }
+
+  /* ── GRÁFICO MENSAL ── */
+  .chart-mensal {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 140px;
+    padding: 1rem 0 0;
+  }
+  .mes-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+  }
+  .mes-bar-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+  }
+  .mes-bar {
+    width: 100%;
+    background: var(--accent);
+    border-radius: 2px 2px 0 0;
+    min-height: 3px;
+    cursor: default;
+  }
+  .mes-bar:hover { background: var(--accent2); }
+  .mes-label {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: .05em;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 4rem;
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: .08em;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  @media (max-width: 700px) {
+    header, main, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .perf-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ────────────────────────────────────────────
+     ESTILOS DE IMPRESSÃO / EXPORT PDF
+     Ativados por window.print() ou Ctrl+P
+  ──────────────────────────────────────────── */
+  @media print {
+    /* Instrui o navegador a usar fundo escuro no PDF */
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    /* Esconde o botão flutuante */
+    .pdf-btn { display: none !important; }
+
+    /* Remove margens de página do browser */
+    @page {
+      size: A4;
+      margin: 1.2cm 1.5cm;
+    }
+
+    body { font-size: 11px; }
+
+    header { padding: 1.5rem 2rem 1.2rem; }
+    header h1 { font-size: 2rem; }
+
+    main { padding: 1.5rem 2rem 2rem; gap: 1.8rem; }
+
+    /* Evita quebra de página no meio de seções */
+    section { break-inside: avoid; }
+
+    /* KPI menor para caber em A4 */
+    .kpi-value { font-size: 1.3rem; }
+    .perf-value { font-size: 1.8rem; }
+
+    /* Gráfico mensal: altura fixa para impressão */
+    .chart-mensal { height: 100px; }
+
+    /* Tabelas: cabeçalho repete em cada página */
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+
+    /* Linha de tabela não quebra no meio */
+    tr { break-inside: avoid; }
+
+    footer { padding: 1rem 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Botão fixo de exportar PDF -->
+<button class="pdf-btn" onclick="exportarPDF()">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6zm2-5h8v1H8v-1zm0 2.5h5v1H8v-1zm0-5h8v1H8v-1z"/>
+  </svg>
+  Exportar PDF
+</button>
+
+<header>
+  <p class="header-label">Análise · Programação Paralela e Distribuída</p>
+  <h1>Notas Fiscais<br><em>Sintéticas</em></h1>
+  <p class="header-meta">Gerado em 27/05/2026 às 18:29 &nbsp;·&nbsp; Base de 8.000.000 registros &nbsp;·&nbsp; melhor: 12 processos &nbsp;·&nbsp; modo pesado</p>
+</header>
+
+<main>
+
+  <section>
+    <p class="section-title">01 — Visão Geral da Base</p>
+    <div class="kpi-grid">
+      <div class="kpi">
+        <p class="kpi-label">Total de Registros</p>
+        <p class="kpi-value">8.000.000</p>
+        <p class="kpi-sub">itens de notas fiscais</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">Faturamento Total</p>
+        <p class="kpi-value accent">R$ 665.957.338,00</p>
+        <p class="kpi-sub">soma de todos os itens</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">ICMS Estimado</p>
+        <p class="kpi-value accent">R$ 121.218.048,95</p>
+        <p class="kpi-sub">calculo monetario com Decimal</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">Risco Fiscal</p>
+        <p class="kpi-value green">22.771</p>
+        <p class="kpi-sub">itens marcados pelo score</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">Inconsistencias</p>
+        <p class="kpi-value">0</p>
+        <p class="kpi-sub">validacao total x qtd x preco</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">Maior Item</p>
+        <p class="kpi-value">R$ 755,00</p>
+        <p class="kpi-sub">Carne Bovina 1kg Prime Lote 018</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">Menor Item</p>
+        <p class="kpi-value">R$ 1,90</p>
+        <p class="kpi-sub">Sal 1kg Bom Lote 002</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">Produtos Distintos</p>
+        <p class="kpi-value green">4000</p>
+        <p class="kpi-sub">categorias monitoradas</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-label">Estados</p>
+        <p class="kpi-value green">10</p>
+        <p class="kpi-sub">unidades federativas</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-title">02 — Desempenho: Serial vs Paralelo</p>
+    <div class="perf-grid">
+      <div class="perf-item">
+        <p class="perf-label">Tempo Sequencial</p>
+        <p class="perf-value seq">118.4251s</p>
+        <p class="speedup-note">1 processo · baseline</p>
+      </div>
+      <div class="perf-item">
+        <p class="perf-label">Tempo Paralelo</p>
+        <p class="perf-value par">18.096s</p>
+        <p class="speedup-note">12 processos · multiprocessing</p>
+      </div>
+      <div class="perf-item highlight">
+        <p class="perf-label">Speedup</p>
+        <p class="perf-value spd">6.54×</p>
+        <p class="speedup-note">T_serial / T_paralelo</p>
+      </div>
+      <div class="perf-item highlight">
+        <p class="perf-label">Eficiência</p>
+        <p class="perf-value eff">54.5%</p>
+        <p class="speedup-note">speedup / processos × 100</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-title">03 — Escala por Quantidade de Processos</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Processos</th>
+          <th style="text-align:right">Tempo</th>
+          <th style="text-align:right">Speedup</th>
+          <th style="text-align:right">Eficiência</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="">
+          <td class="nome">1</td>
+          <td class="num">133.9281s</td>
+          <td class="num">0.88x</td>
+          <td class="num">88.0%</td>
+        </tr>
+        <tr class="">
+          <td class="nome">2</td>
+          <td class="num">68.6179s</td>
+          <td class="num">1.73x</td>
+          <td class="num">86.5%</td>
+        </tr>
+        <tr class="">
+          <td class="nome">4</td>
+          <td class="num">35.8380s</td>
+          <td class="num">3.30x</td>
+          <td class="num">82.5%</td>
+        </tr>
+        <tr class="">
+          <td class="nome">8</td>
+          <td class="num">20.4565s</td>
+          <td class="num">5.79x</td>
+          <td class="num">72.4%</td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">12</td>
+          <td class="num">18.0960s</td>
+          <td class="num">6.54x</td>
+          <td class="num">54.5%</td>
+        </tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="section-title">04 — Ranking de Produtos por Faturamento</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th style="text-align:right">Faturamento</th>
+          <th style="text-align:right">Qtd Vendida</th>
+          <th style="text-align:right">Preço Mín</th>
+          <th style="text-align:right">Preço Máx</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Prime Lote 010</td>
+          <td class="num">R$ 624.794,99</td>
+          <td class="num">11.895</td>
+          <td class="num">R$ 30,29</td>
+          <td class="num">R$ 75,28</td>
+          <td class="bar-cell"><div class="bar" style="width:100.0%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Real Lote 013</td>
+          <td class="num">R$ 606.297,86</td>
+          <td class="num">11.570</td>
+          <td class="num">R$ 30,41</td>
+          <td class="num">R$ 75,35</td>
+          <td class="bar-cell"><div class="bar" style="width:97.0%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Bom Lote 008</td>
+          <td class="num">R$ 606.110,05</td>
+          <td class="num">11.545</td>
+          <td class="num">R$ 30,24</td>
+          <td class="num">R$ 75,22</td>
+          <td class="bar-cell"><div class="bar" style="width:97.0%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Bom Lote 017</td>
+          <td class="num">R$ 600.841,66</td>
+          <td class="num">11.572</td>
+          <td class="num">R$ 30,48</td>
+          <td class="num">R$ 75,43</td>
+          <td class="bar-cell"><div class="bar" style="width:96.2%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Nobre Lote 010</td>
+          <td class="num">R$ 600.034,73</td>
+          <td class="num">11.590</td>
+          <td class="num">R$ 30,29</td>
+          <td class="num">R$ 75,27</td>
+          <td class="bar-cell"><div class="bar" style="width:96.0%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Delta Lote 016</td>
+          <td class="num">R$ 599.521,95</td>
+          <td class="num">11.396</td>
+          <td class="num">R$ 30,50</td>
+          <td class="num">R$ 75,41</td>
+          <td class="bar-cell"><div class="bar" style="width:96.0%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Delta Lote 006</td>
+          <td class="num">R$ 595.996,44</td>
+          <td class="num">11.520</td>
+          <td class="num">R$ 30,21</td>
+          <td class="num">R$ 75,15</td>
+          <td class="bar-cell"><div class="bar" style="width:95.4%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Delta Lote 004</td>
+          <td class="num">R$ 594.658,84</td>
+          <td class="num">11.503</td>
+          <td class="num">R$ 30,12</td>
+          <td class="num">R$ 75,08</td>
+          <td class="bar-cell"><div class="bar" style="width:95.2%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Real Lote 020</td>
+          <td class="num">R$ 594.475,21</td>
+          <td class="num">11.296</td>
+          <td class="num">R$ 30,60</td>
+          <td class="num">R$ 75,55</td>
+          <td class="bar-cell"><div class="bar" style="width:95.1%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Prime Lote 008</td>
+          <td class="num">R$ 594.266,04</td>
+          <td class="num">11.245</td>
+          <td class="num">R$ 30,25</td>
+          <td class="num">R$ 75,21</td>
+          <td class="bar-cell"><div class="bar" style="width:95.1%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Delta Lote 019</td>
+          <td class="num">R$ 593.768,26</td>
+          <td class="num">11.393</td>
+          <td class="num">R$ 30,55</td>
+          <td class="num">R$ 75,53</td>
+          <td class="bar-cell"><div class="bar" style="width:95.0%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Norte Lote 010</td>
+          <td class="num">R$ 593.334,83</td>
+          <td class="num">11.361</td>
+          <td class="num">R$ 30,29</td>
+          <td class="num">R$ 75,19</td>
+          <td class="bar-cell"><div class="bar" style="width:95.0%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Prime Lote 019</td>
+          <td class="num">R$ 592.900,64</td>
+          <td class="num">11.290</td>
+          <td class="num">R$ 30,55</td>
+          <td class="num">R$ 75,53</td>
+          <td class="bar-cell"><div class="bar" style="width:94.9%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Delta Lote 017</td>
+          <td class="num">R$ 592.658,20</td>
+          <td class="num">11.306</td>
+          <td class="num">R$ 30,49</td>
+          <td class="num">R$ 75,44</td>
+          <td class="bar-cell"><div class="bar" style="width:94.9%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Prime Lote 005</td>
+          <td class="num">R$ 592.621,77</td>
+          <td class="num">11.378</td>
+          <td class="num">R$ 30,15</td>
+          <td class="num">R$ 75,13</td>
+          <td class="bar-cell"><div class="bar" style="width:94.9%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Nobre Lote 018</td>
+          <td class="num">R$ 592.540,88</td>
+          <td class="num">11.312</td>
+          <td class="num">R$ 30,52</td>
+          <td class="num">R$ 75,45</td>
+          <td class="bar-cell"><div class="bar" style="width:94.8%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Bom Lote 009</td>
+          <td class="num">R$ 591.875,58</td>
+          <td class="num">11.367</td>
+          <td class="num">R$ 30,30</td>
+          <td class="num">R$ 75,23</td>
+          <td class="bar-cell"><div class="bar" style="width:94.7%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Norte Lote 006</td>
+          <td class="num">R$ 591.323,54</td>
+          <td class="num">11.497</td>
+          <td class="num">R$ 30,19</td>
+          <td class="num">R$ 75,11</td>
+          <td class="bar-cell"><div class="bar" style="width:94.6%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Bom Lote 020</td>
+          <td class="num">R$ 591.260,71</td>
+          <td class="num">11.228</td>
+          <td class="num">R$ 30,64</td>
+          <td class="num">R$ 75,55</td>
+          <td class="bar-cell"><div class="bar" style="width:94.6%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Norte Lote 013</td>
+          <td class="num">R$ 591.198,18</td>
+          <td class="num">11.378</td>
+          <td class="num">R$ 30,37</td>
+          <td class="num">R$ 75,32</td>
+          <td class="bar-cell"><div class="bar" style="width:94.6%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Verde Lote 002</td>
+          <td class="num">R$ 591.090,41</td>
+          <td class="num">11.403</td>
+          <td class="num">R$ 30,07</td>
+          <td class="num">R$ 75,04</td>
+          <td class="bar-cell"><div class="bar" style="width:94.6%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Sul Lote 002</td>
+          <td class="num">R$ 590.119,41</td>
+          <td class="num">11.459</td>
+          <td class="num">R$ 30,07</td>
+          <td class="num">R$ 74,99</td>
+          <td class="bar-cell"><div class="bar" style="width:94.5%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Sul Lote 012</td>
+          <td class="num">R$ 589.950,20</td>
+          <td class="num">11.336</td>
+          <td class="num">R$ 30,40</td>
+          <td class="num">R$ 75,33</td>
+          <td class="bar-cell"><div class="bar" style="width:94.4%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Bom Lote 012</td>
+          <td class="num">R$ 589.640,59</td>
+          <td class="num">11.343</td>
+          <td class="num">R$ 30,36</td>
+          <td class="num">R$ 75,33</td>
+          <td class="bar-cell"><div class="bar" style="width:94.4%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Prime Lote 017</td>
+          <td class="num">R$ 588.998,65</td>
+          <td class="num">11.312</td>
+          <td class="num">R$ 30,49</td>
+          <td class="num">R$ 75,48</td>
+          <td class="bar-cell"><div class="bar" style="width:94.3%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Real Lote 002</td>
+          <td class="num">R$ 588.624,01</td>
+          <td class="num">11.385</td>
+          <td class="num">R$ 30,06</td>
+          <td class="num">R$ 75,05</td>
+          <td class="bar-cell"><div class="bar" style="width:94.2%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Sul Lote 020</td>
+          <td class="num">R$ 587.691,30</td>
+          <td class="num">11.324</td>
+          <td class="num">R$ 30,60</td>
+          <td class="num">R$ 75,55</td>
+          <td class="bar-cell"><div class="bar" style="width:94.1%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Nobre Lote 014</td>
+          <td class="num">R$ 587.297,45</td>
+          <td class="num">11.272</td>
+          <td class="num">R$ 30,40</td>
+          <td class="num">R$ 75,38</td>
+          <td class="bar-cell"><div class="bar" style="width:94.0%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Real Lote 007</td>
+          <td class="num">R$ 587.297,07</td>
+          <td class="num">11.279</td>
+          <td class="num">R$ 30,20</td>
+          <td class="num">R$ 75,19</td>
+          <td class="bar-cell"><div class="bar" style="width:94.0%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Delta Lote 002</td>
+          <td class="num">R$ 587.090,94</td>
+          <td class="num">11.340</td>
+          <td class="num">R$ 30,10</td>
+          <td class="num">R$ 75,04</td>
+          <td class="bar-cell"><div class="bar" style="width:94.0%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Real Lote 009</td>
+          <td class="num">R$ 586.228,53</td>
+          <td class="num">11.160</td>
+          <td class="num">R$ 30,26</td>
+          <td class="num">R$ 75,25</td>
+          <td class="bar-cell"><div class="bar" style="width:93.8%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Bom Lote 016</td>
+          <td class="num">R$ 585.825,47</td>
+          <td class="num">11.108</td>
+          <td class="num">R$ 30,48</td>
+          <td class="num">R$ 75,44</td>
+          <td class="bar-cell"><div class="bar" style="width:93.8%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Delta Lote 011</td>
+          <td class="num">R$ 585.804,15</td>
+          <td class="num">11.351</td>
+          <td class="num">R$ 30,32</td>
+          <td class="num">R$ 75,28</td>
+          <td class="bar-cell"><div class="bar" style="width:93.8%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Delta Lote 001</td>
+          <td class="num">R$ 585.712,56</td>
+          <td class="num">11.426</td>
+          <td class="num">R$ 30,04</td>
+          <td class="num">R$ 75,02</td>
+          <td class="bar-cell"><div class="bar" style="width:93.7%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Sul Lote 011</td>
+          <td class="num">R$ 585.541,77</td>
+          <td class="num">11.283</td>
+          <td class="num">R$ 30,31</td>
+          <td class="num">R$ 75,19</td>
+          <td class="bar-cell"><div class="bar" style="width:93.7%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Max Lote 010</td>
+          <td class="num">R$ 584.356,15</td>
+          <td class="num">11.299</td>
+          <td class="num">R$ 30,29</td>
+          <td class="num">R$ 75,28</td>
+          <td class="bar-cell"><div class="bar" style="width:93.5%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Nobre Lote 008</td>
+          <td class="num">R$ 583.445,24</td>
+          <td class="num">11.356</td>
+          <td class="num">R$ 30,27</td>
+          <td class="num">R$ 75,22</td>
+          <td class="bar-cell"><div class="bar" style="width:93.4%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Max Lote 004</td>
+          <td class="num">R$ 583.002,66</td>
+          <td class="num">11.271</td>
+          <td class="num">R$ 30,12</td>
+          <td class="num">R$ 75,10</td>
+          <td class="bar-cell"><div class="bar" style="width:93.3%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Verde Lote 007</td>
+          <td class="num">R$ 582.969,09</td>
+          <td class="num">11.232</td>
+          <td class="num">R$ 30,20</td>
+          <td class="num">R$ 75,19</td>
+          <td class="bar-cell"><div class="bar" style="width:93.3%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Norte Lote 009</td>
+          <td class="num">R$ 582.774,34</td>
+          <td class="num">11.130</td>
+          <td class="num">R$ 30,26</td>
+          <td class="num">R$ 75,21</td>
+          <td class="bar-cell"><div class="bar" style="width:93.3%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Verde Lote 014</td>
+          <td class="num">R$ 582.664,07</td>
+          <td class="num">11.094</td>
+          <td class="num">R$ 30,40</td>
+          <td class="num">R$ 75,34</td>
+          <td class="bar-cell"><div class="bar" style="width:93.3%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Solar Lote 004</td>
+          <td class="num">R$ 582.627,11</td>
+          <td class="num">11.182</td>
+          <td class="num">R$ 30,13</td>
+          <td class="num">R$ 75,10</td>
+          <td class="bar-cell"><div class="bar" style="width:93.3%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Norte Lote 004</td>
+          <td class="num">R$ 582.588,96</td>
+          <td class="num">11.201</td>
+          <td class="num">R$ 30,13</td>
+          <td class="num">R$ 75,10</td>
+          <td class="bar-cell"><div class="bar" style="width:93.2%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Delta Lote 012</td>
+          <td class="num">R$ 582.567,41</td>
+          <td class="num">11.118</td>
+          <td class="num">R$ 30,35</td>
+          <td class="num">R$ 75,29</td>
+          <td class="bar-cell"><div class="bar" style="width:93.2%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Norte Lote 001</td>
+          <td class="num">R$ 582.041,34</td>
+          <td class="num">11.303</td>
+          <td class="num">R$ 30,04</td>
+          <td class="num">R$ 75,01</td>
+          <td class="bar-cell"><div class="bar" style="width:93.2%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Prime Lote 014</td>
+          <td class="num">R$ 581.930,27</td>
+          <td class="num">11.173</td>
+          <td class="num">R$ 30,41</td>
+          <td class="num">R$ 75,35</td>
+          <td class="bar-cell"><div class="bar" style="width:93.1%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Solar Lote 015</td>
+          <td class="num">R$ 581.649,68</td>
+          <td class="num">11.161</td>
+          <td class="num">R$ 30,42</td>
+          <td class="num">R$ 75,41</td>
+          <td class="bar-cell"><div class="bar" style="width:93.1%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Bom Lote 011</td>
+          <td class="num">R$ 581.272,08</td>
+          <td class="num">11.170</td>
+          <td class="num">R$ 30,34</td>
+          <td class="num">R$ 75,29</td>
+          <td class="bar-cell"><div class="bar" style="width:93.0%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Norte Lote 020</td>
+          <td class="num">R$ 581.112,93</td>
+          <td class="num">11.059</td>
+          <td class="num">R$ 30,57</td>
+          <td class="num">R$ 75,55</td>
+          <td class="bar-cell"><div class="bar" style="width:93.0%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Max Lote 012</td>
+          <td class="num">R$ 580.902,23</td>
+          <td class="num">11.121</td>
+          <td class="num">R$ 30,35</td>
+          <td class="num">R$ 75,33</td>
+          <td class="bar-cell"><div class="bar" style="width:93.0%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Sul Lote 004</td>
+          <td class="num">R$ 580.644,64</td>
+          <td class="num">11.317</td>
+          <td class="num">R$ 30,23</td>
+          <td class="num">R$ 75,08</td>
+          <td class="bar-cell"><div class="bar" style="width:92.9%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Real Lote 003</td>
+          <td class="num">R$ 580.421,03</td>
+          <td class="num">11.218</td>
+          <td class="num">R$ 30,09</td>
+          <td class="num">R$ 75,08</td>
+          <td class="bar-cell"><div class="bar" style="width:92.9%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Real Lote 016</td>
+          <td class="num">R$ 580.406,39</td>
+          <td class="num">11.160</td>
+          <td class="num">R$ 30,46</td>
+          <td class="num">R$ 75,38</td>
+          <td class="bar-cell"><div class="bar" style="width:92.9%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Sul Lote 015</td>
+          <td class="num">R$ 580.362,76</td>
+          <td class="num">11.151</td>
+          <td class="num">R$ 30,45</td>
+          <td class="num">R$ 75,38</td>
+          <td class="bar-cell"><div class="bar" style="width:92.9%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Bom Lote 015</td>
+          <td class="num">R$ 579.873,89</td>
+          <td class="num">11.092</td>
+          <td class="num">R$ 30,49</td>
+          <td class="num">R$ 75,39</td>
+          <td class="bar-cell"><div class="bar" style="width:92.8%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Sul Lote 013</td>
+          <td class="num">R$ 579.401,23</td>
+          <td class="num">11.129</td>
+          <td class="num">R$ 30,39</td>
+          <td class="num">R$ 75,29</td>
+          <td class="bar-cell"><div class="bar" style="width:92.7%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Nobre Lote 012</td>
+          <td class="num">R$ 579.331,19</td>
+          <td class="num">11.140</td>
+          <td class="num">R$ 30,34</td>
+          <td class="num">R$ 75,31</td>
+          <td class="bar-cell"><div class="bar" style="width:92.7%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Max Lote 002</td>
+          <td class="num">R$ 579.140,04</td>
+          <td class="num">11.100</td>
+          <td class="num">R$ 30,12</td>
+          <td class="num">R$ 75,05</td>
+          <td class="bar-cell"><div class="bar" style="width:92.7%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Delta Lote 018</td>
+          <td class="num">R$ 579.077,09</td>
+          <td class="num">11.083</td>
+          <td class="num">R$ 30,51</td>
+          <td class="num">R$ 75,51</td>
+          <td class="bar-cell"><div class="bar" style="width:92.7%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Solar Lote 014</td>
+          <td class="num">R$ 579.018,56</td>
+          <td class="num">11.203</td>
+          <td class="num">R$ 30,41</td>
+          <td class="num">R$ 75,38</td>
+          <td class="bar-cell"><div class="bar" style="width:92.7%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Solar Lote 003</td>
+          <td class="num">R$ 578.851,69</td>
+          <td class="num">11.054</td>
+          <td class="num">R$ 30,10</td>
+          <td class="num">R$ 75,07</td>
+          <td class="bar-cell"><div class="bar" style="width:92.6%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Solar Lote 005</td>
+          <td class="num">R$ 578.393,26</td>
+          <td class="num">11.161</td>
+          <td class="num">R$ 30,14</td>
+          <td class="num">R$ 75,13</td>
+          <td class="bar-cell"><div class="bar" style="width:92.6%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Max Lote 017</td>
+          <td class="num">R$ 578.328,99</td>
+          <td class="num">10.972</td>
+          <td class="num">R$ 30,50</td>
+          <td class="num">R$ 75,46</td>
+          <td class="bar-cell"><div class="bar" style="width:92.6%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Real Lote 008</td>
+          <td class="num">R$ 578.280,19</td>
+          <td class="num">11.177</td>
+          <td class="num">R$ 30,24</td>
+          <td class="num">R$ 75,18</td>
+          <td class="bar-cell"><div class="bar" style="width:92.6%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Solar Lote 002</td>
+          <td class="num">R$ 578.083,82</td>
+          <td class="num">11.168</td>
+          <td class="num">R$ 30,07</td>
+          <td class="num">R$ 75,03</td>
+          <td class="bar-cell"><div class="bar" style="width:92.5%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Max Lote 014</td>
+          <td class="num">R$ 577.754,62</td>
+          <td class="num">11.068</td>
+          <td class="num">R$ 30,43</td>
+          <td class="num">R$ 75,39</td>
+          <td class="bar-cell"><div class="bar" style="width:92.5%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Solar Lote 012</td>
+          <td class="num">R$ 577.146,61</td>
+          <td class="num">11.124</td>
+          <td class="num">R$ 30,40</td>
+          <td class="num">R$ 75,31</td>
+          <td class="bar-cell"><div class="bar" style="width:92.4%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Real Lote 014</td>
+          <td class="num">R$ 577.143,18</td>
+          <td class="num">10.985</td>
+          <td class="num">R$ 30,39</td>
+          <td class="num">R$ 75,39</td>
+          <td class="bar-cell"><div class="bar" style="width:92.4%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Delta Lote 015</td>
+          <td class="num">R$ 576.850,86</td>
+          <td class="num">11.096</td>
+          <td class="num">R$ 30,44</td>
+          <td class="num">R$ 75,42</td>
+          <td class="bar-cell"><div class="bar" style="width:92.3%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Verde Lote 012</td>
+          <td class="num">R$ 576.591,98</td>
+          <td class="num">11.060</td>
+          <td class="num">R$ 30,34</td>
+          <td class="num">R$ 75,34</td>
+          <td class="bar-cell"><div class="bar" style="width:92.3%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Nobre Lote 009</td>
+          <td class="num">R$ 576.530,63</td>
+          <td class="num">11.170</td>
+          <td class="num">R$ 30,27</td>
+          <td class="num">R$ 75,23</td>
+          <td class="bar-cell"><div class="bar" style="width:92.3%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Sul Lote 014</td>
+          <td class="num">R$ 576.421,56</td>
+          <td class="num">11.095</td>
+          <td class="num">R$ 30,40</td>
+          <td class="num">R$ 75,38</td>
+          <td class="bar-cell"><div class="bar" style="width:92.3%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Prime Lote 002</td>
+          <td class="num">R$ 575.880,67</td>
+          <td class="num">11.100</td>
+          <td class="num">R$ 30,08</td>
+          <td class="num">R$ 75,04</td>
+          <td class="bar-cell"><div class="bar" style="width:92.2%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Bom Lote 005</td>
+          <td class="num">R$ 575.870,48</td>
+          <td class="num">11.008</td>
+          <td class="num">R$ 30,17</td>
+          <td class="num">R$ 75,13</td>
+          <td class="bar-cell"><div class="bar" style="width:92.2%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Verde Lote 016</td>
+          <td class="num">R$ 575.849,02</td>
+          <td class="num">10.945</td>
+          <td class="num">R$ 30,53</td>
+          <td class="num">R$ 75,43</td>
+          <td class="bar-cell"><div class="bar" style="width:92.2%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Nobre Lote 019</td>
+          <td class="num">R$ 575.734,46</td>
+          <td class="num">10.998</td>
+          <td class="num">R$ 30,58</td>
+          <td class="num">R$ 75,52</td>
+          <td class="bar-cell"><div class="bar" style="width:92.1%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Sul Lote 016</td>
+          <td class="num">R$ 575.464,20</td>
+          <td class="num">11.004</td>
+          <td class="num">R$ 30,50</td>
+          <td class="num">R$ 75,42</td>
+          <td class="bar-cell"><div class="bar" style="width:92.1%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Sul Lote 003</td>
+          <td class="num">R$ 575.461,51</td>
+          <td class="num">11.192</td>
+          <td class="num">R$ 30,11</td>
+          <td class="num">R$ 75,07</td>
+          <td class="bar-cell"><div class="bar" style="width:92.1%"></div></td>
+        </tr>
+        <tr class="">
+          <td class="nome">Carne Bovina 1kg Verde Lote 019</td>
+          <td class="num">R$ 575.122,86</td>
+          <td class="num">10.965</td>
+          <td class="num">R$ 30,56</td>
+          <td class="num">R$ 75,53</td>
+          <td class="bar-cell"><div class="bar" style="width:92.0%"></div></td>
+        </tr>
+        <tr class="alt">
+          <td class="nome">Carne Bovina 1kg Norte Lote 008</td>
+          <td class="num">R$ 574.881,27</td>
+          <td class="num">11.044</td>
+          <td class="num">R$ 30,24</td>
+          <td class="num">R$ 75,21</td>
+          <td class="bar-cell"><div class="bar" style="width:92.0%"></div></td>
+        </tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="section-title">05 — Faturamento por Estado</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Estado</th>
+          <th style="text-align:right">Faturamento Total</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="nome">RJ</td>
+          <td class="num">R$ 67.061.165,06</td>
+          <td class="bar-cell"><div class="bar estado" style="width:100.0%"></div></td>
+        </tr>
+        <tr>
+          <td class="nome">SP</td>
+          <td class="num">R$ 66.714.611,80</td>
+          <td class="bar-cell"><div class="bar estado" style="width:99.5%"></div></td>
+        </tr>
+        <tr>
+          <td class="nome">BA</td>
+          <td class="num">R$ 66.713.770,06</td>
+          <td class="bar-cell"><div class="bar estado" style="width:99.5%"></div></td>
+        </tr>
+        <tr>
+          <td class="nome">GO</td>
+          <td class="num">R$ 66.689.234,12</td>
+          <td class="bar-cell"><div class="bar estado" style="width:99.4%"></div></td>
+        </tr>
+        <tr>
+          <td class="nome">MG</td>
+          <td class="num">R$ 66.504.740,54</td>
+          <td class="bar-cell"><div class="bar estado" style="width:99.2%"></div></td>
+        </tr>
+        <tr>
+          <td class="nome">PR</td>
+          <td class="num">R$ 66.503.272,11</td>
+          <td class="bar-cell"><div class="bar estado" style="width:99.2%"></div></td>
+        </tr>
+        <tr>
+          <td class="nome">CE</td>
+          <td class="num">R$ 66.474.590,73</td>
+          <td class="bar-cell"><div class="bar estado" style="width:99.1%"></div></td>
+        </tr>
+        <tr>
+          <td class="nome">RS</td>
+          <td class="num">R$ 66.451.118,82</td>
+          <td class="bar-cell"><div class="bar estado" style="width:99.1%"></div></td>
+        </tr>
+        <tr>
+          <td class="nome">PE</td>
+          <td class="num">R$ 66.448.162,22</td>
+          <td class="bar-cell"><div class="bar estado" style="width:99.1%"></div></td>
+        </tr>
+        <tr>
+          <td class="nome">SC</td>
+          <td class="num">R$ 66.396.672,54</td>
+          <td class="bar-cell"><div class="bar estado" style="width:99.0%"></div></td>
+        </tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="section-title">06 — Faturamento Mensal</p>
+    <div class="chart-mensal">
+      
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.6%" title="R$ 18.984.225,35"></div>
+            </div>
+            <span class="mes-label">01</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:88.3%" title="R$ 16.826.714,70"></div>
+            </div>
+            <span class="mes-label">02</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:98.9%" title="R$ 18.845.244,90"></div>
+            </div>
+            <span class="mes-label">03</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:95.2%" title="R$ 18.133.394,18"></div>
+            </div>
+            <span class="mes-label">04</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:98.7%" title="R$ 18.809.629,76"></div>
+            </div>
+            <span class="mes-label">05</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:95.4%" title="R$ 18.181.585,16"></div>
+            </div>
+            <span class="mes-label">06</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.0%" title="R$ 18.854.615,83"></div>
+            </div>
+            <span class="mes-label">07</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.0%" title="R$ 18.857.182,23"></div>
+            </div>
+            <span class="mes-label">08</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:94.2%" title="R$ 17.951.733,01"></div>
+            </div>
+            <span class="mes-label">09</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.7%" title="R$ 19.004.233,66"></div>
+            </div>
+            <span class="mes-label">10</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:95.7%" title="R$ 18.240.573,91"></div>
+            </div>
+            <span class="mes-label">11</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:97.9%" title="R$ 18.657.307,02"></div>
+            </div>
+            <span class="mes-label">12</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.9%" title="R$ 19.026.793,26"></div>
+            </div>
+            <span class="mes-label">01</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:89.4%" title="R$ 17.037.341,95"></div>
+            </div>
+            <span class="mes-label">02</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:100.0%" title="R$ 19.053.727,15"></div>
+            </div>
+            <span class="mes-label">03</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:96.3%" title="R$ 18.350.306,03"></div>
+            </div>
+            <span class="mes-label">04</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:98.9%" title="R$ 18.839.094,91"></div>
+            </div>
+            <span class="mes-label">05</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:95.2%" title="R$ 18.133.703,40"></div>
+            </div>
+            <span class="mes-label">06</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:98.6%" title="R$ 18.780.380,46"></div>
+            </div>
+            <span class="mes-label">07</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:98.2%" title="R$ 18.709.642,47"></div>
+            </div>
+            <span class="mes-label">08</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:95.0%" title="R$ 18.106.633,86"></div>
+            </div>
+            <span class="mes-label">09</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.0%" title="R$ 18.863.281,32"></div>
+            </div>
+            <span class="mes-label">10</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:95.3%" title="R$ 18.148.921,49"></div>
+            </div>
+            <span class="mes-label">11</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:98.4%" title="R$ 18.753.461,70"></div>
+            </div>
+            <span class="mes-label">12</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.8%" title="R$ 19.014.460,59"></div>
+            </div>
+            <span class="mes-label">01</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:92.8%" title="R$ 17.677.486,83"></div>
+            </div>
+            <span class="mes-label">02</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.0%" title="R$ 18.857.241,71"></div>
+            </div>
+            <span class="mes-label">03</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:95.1%" title="R$ 18.110.831,06"></div>
+            </div>
+            <span class="mes-label">04</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:98.7%" title="R$ 18.814.144,42"></div>
+            </div>
+            <span class="mes-label">05</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:95.7%" title="R$ 18.237.265,32"></div>
+            </div>
+            <span class="mes-label">06</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:98.7%" title="R$ 18.801.513,22"></div>
+            </div>
+            <span class="mes-label">07</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.0%" title="R$ 18.861.632,30"></div>
+            </div>
+            <span class="mes-label">08</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:95.3%" title="R$ 18.148.853,22"></div>
+            </div>
+            <span class="mes-label">09</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.2%" title="R$ 18.906.602,42"></div>
+            </div>
+            <span class="mes-label">10</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:96.4%" title="R$ 18.369.604,28"></div>
+            </div>
+            <span class="mes-label">11</span>
+          </div>
+          <div class="mes-col">
+            <div class="mes-bar-wrap">
+              <div class="mes-bar" style="height:99.8%" title="R$ 19.007.974,92"></div>
+            </div>
+            <span class="mes-label">12</span>
+          </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span>Análise de Notas Fiscais Sintéticas · Programação Paralela e Distribuída</span>
+  <span>27/05/2026 às 18:29</span>
+</footer>
+
+<script>
+  function exportarPDF() {
+    // Dica: no diálogo de impressão, selecione "Salvar como PDF"
+    // e marque "Gráficos de plano de fundo" para preservar as cores escuras
+    window.print();
+  }
+</script>
+
+</body>
+</html>
