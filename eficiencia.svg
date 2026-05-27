@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="390" viewBox="0 0 620 390">
+  <rect width="620" height="390" fill="#ffffff"/>
+  <text x="310" y="32" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#222">Eficiência</text>
+  <text x="310" y="56" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#666">speedup / processos</text>
+  <line x1="70" y1="320" x2="580" y2="320" stroke="#333" stroke-width="1"/>
+  <line x1="70" y1="80" x2="70" y2="320" stroke="#333" stroke-width="1"/>
+  <line x1="70" y1="260" x2="580" y2="260" stroke="#e5e5e5"/>
+  <line x1="70" y1="200" x2="580" y2="200" stroke="#e5e5e5"/>
+  <line x1="70" y1="140" x2="580" y2="140" stroke="#e5e5e5"/>
+  <rect x="105" y="86" width="54" height="234" rx="4" fill="#3f8f68"/>
+  <rect x="205" y="90" width="54" height="230" rx="4" fill="#6ab187"/>
+  <rect x="305" y="100" width="54" height="220" rx="4" fill="#9bcf9f"/>
+  <rect x="405" y="127" width="54" height="193" rx="4" fill="#e8a87c"/>
+  <rect x="505" y="175" width="54" height="145" rx="4" fill="#c84b31"/>
+  <text x="132" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">1</text>
+  <text x="232" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">2</text>
+  <text x="332" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">4</text>
+  <text x="432" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">8</text>
+  <text x="532" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">12</text>
+  <text x="325" y="374" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#555">Processos</text>
+  <text x="132" y="78" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">88.0%</text>
+  <text x="232" y="82" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">86.5%</text>
+  <text x="332" y="92" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">82.5%</text>
+  <text x="432" y="119" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">72.4%</text>
+  <text x="532" y="167" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">54.5%</text>
+</svg>

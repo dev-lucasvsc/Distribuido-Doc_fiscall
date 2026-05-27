@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="390" viewBox="0 0 620 390">
+  <rect width="620" height="390" fill="#ffffff"/>
+  <text x="310" y="32" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#222">Tempo de Execução</text>
+  <text x="310" y="56" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#666">menor é melhor</text>
+  <line x1="70" y1="320" x2="580" y2="320" stroke="#333" stroke-width="1"/>
+  <line x1="70" y1="80" x2="70" y2="320" stroke="#333" stroke-width="1"/>
+  <line x1="70" y1="260" x2="580" y2="260" stroke="#e5e5e5"/>
+  <line x1="70" y1="200" x2="580" y2="200" stroke="#e5e5e5"/>
+  <line x1="70" y1="140" x2="580" y2="140" stroke="#e5e5e5"/>
+  <rect x="105" y="80" width="54" height="240" rx="4" fill="#c84b31"/>
+  <rect x="205" y="197" width="54" height="123" rx="4" fill="#e08a47"/>
+  <rect x="305" y="256" width="54" height="64" rx="4" fill="#e8a87c"/>
+  <rect x="405" y="283" width="54" height="37" rx="4" fill="#6ab187"/>
+  <rect x="505" y="288" width="54" height="32" rx="4" fill="#3f8f68"/>
+  <text x="132" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">1</text>
+  <text x="232" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">2</text>
+  <text x="332" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">4</text>
+  <text x="432" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">8</text>
+  <text x="532" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">12</text>
+  <text x="325" y="374" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#555">Processos</text>
+  <text x="132" y="72" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">133.9s</text>
+  <text x="232" y="189" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">68.6s</text>
+  <text x="332" y="248" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">35.8s</text>
+  <text x="432" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">20.5s</text>
+  <text x="532" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">18.1s</text>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="390" viewBox="0 0 620 390">
+  <rect width="620" height="390" fill="#ffffff"/>
+  <text x="310" y="32" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#222">Speedup</text>
+  <text x="310" y="56" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#666">T sequencial / T paralelo</text>
+  <line x1="70" y1="320" x2="580" y2="320" stroke="#333" stroke-width="1"/>
+  <line x1="70" y1="80" x2="70" y2="320" stroke="#333" stroke-width="1"/>
+  <line x1="70" y1="260" x2="580" y2="260" stroke="#e5e5e5"/>
+  <line x1="70" y1="200" x2="580" y2="200" stroke="#e5e5e5"/>
+  <line x1="70" y1="140" x2="580" y2="140" stroke="#e5e5e5"/>
+  <polyline points="132,288 232,257 332,199 432,108 532,80" fill="none" stroke="#c84b31" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="132" cy="288" r="7" fill="#c84b31"/>
+  <circle cx="232" cy="257" r="7" fill="#c84b31"/>
+  <circle cx="332" cy="199" r="7" fill="#c84b31"/>
+  <circle cx="432" cy="108" r="7" fill="#c84b31"/>
+  <circle cx="532" cy="80" r="7" fill="#c84b31"/>
+  <text x="132" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">1</text>
+  <text x="232" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">2</text>
+  <text x="332" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">4</text>
+  <text x="432" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">8</text>
+  <text x="532" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">12</text>
+  <text x="325" y="374" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#555">Processos</text>
+  <text x="132" y="278" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">0.88x</text>
+  <text x="232" y="247" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">1.73x</text>
+  <text x="332" y="189" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">3.30x</text>
+  <text x="432" y="98" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">5.79x</text>
+  <text x="532" y="70" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">6.54x</text>
+</svg>
