@@ -69,7 +69,7 @@ DATAS = [
 ]
 
 
-def gerar_notas(quantidade: int = 8_000_000, arquivo: str = "notas_fiscais.csv") -> None:
+def gerar_notas(quantidade: int = 16_000_000, arquivo: str = "notas_fiscais.csv") -> None:
     """
     Gera `quantidade` linhas flat de itens de NF.
     Cada linha representa 1 item com seu nf_id, data, estado, produto, qtd, preço e total.

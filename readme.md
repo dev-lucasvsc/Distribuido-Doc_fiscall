@@ -3,15 +3,10 @@
 **Disciplina:** Programação Concorrente e Distribuída  
 **Turma:** ADSN04  
 **Professor:** Rafael  
-**Aluno 1:** Lucas Vasconcelos Pessoa de Oliveira
+**Aluno 1:** Lucas Vasconcelos Pessoa de Oliveira  
+**Aluno 2:** Joao Gabriel Lucas Pinheiro de Lima  
 
-**Aluno 2:** Joao Gabriel Lucas Pinheiro de Lima
-
-**Aluno 3:** Gabriel Yan Ribeiro da Costa
-
-**Aluno 4:** Waldo Andrade Silva
-
-**Data:** 27/05/2026  
+**Data:** 01/06/2026  
 
 ---
 
@@ -19,12 +14,12 @@
 
 O programa foi feito para processar uma grande base sintética de **notas fiscais em CSV**, comparando o tempo de execução sequencial com o tempo usando vários processos em paralelo.
 
-A base possui milhões de itens de notas fiscais. Cada linha contém dados como produto, estado, cidade, CNPJ do emissor, quantidade, preço unitário, desconto, alíquota de ICMS e valor total. O objetivo é simular um cenário de análise fiscal pesada, com validações monetárias, cálculo de impostos, agregações e rankings.
+A base possui 16 milhões de itens de notas fiscais. Cada linha contém dados como produto, estado, cidade, CNPJ do emissor, quantidade, preço unitário, desconto, alíquota de ICMS e valor total. O objetivo é simular um cenário de análise fiscal pesada, com validações monetárias, cálculo de impostos, agregações e rankings.
 
 | Pergunta | Resposta |
 |----------|----------|
 | Objetivo | Analisar uma base grande de notas fiscais e comparar execução sequencial com execução paralela |
-| Volume de dados | CSV com 8.000.000 registros, aproximadamente 932 MB |
+| Volume de dados | CSV com **16.000.000 registros**, aproximadamente 1,9 GB |
 | Algoritmo | Divisão do arquivo CSV por faixas de bytes + processamento paralelo com `multiprocessing.Pool.map()` |
 | Complexidade | O(N/p) para a etapa de análise, onde N é o número de registros e p é o número de processos |
 
@@ -34,41 +29,43 @@ A base possui milhões de itens de notas fiscais. Cada linha contém dados como 
 
 | Item | Descrição |
 |------|-----------|
-| Processador | AMD Ryzen 7 5700X 8-Core Processor - 3.40 GHz |
+| Processador | AMD Ryzen 7 5700X 8-Core Processor — 3,40 GHz |
 | Número de núcleos | 8 núcleos físicos / 16 threads lógicas |
 | Memória RAM | 32,0 GB |
 | Armazenamento | 932 GB |
-| Placa de vídeo | NVIDIA GeForce RTX 5060 Ti - 8 GB |
-| Sistema Operacional | Windows 11 - 64 bits |
-| Linguagem utilizada | Python 3 |
+| Placa de vídeo | NVIDIA GeForce RTX 5060 Ti — 8 GB |
+| Sistema Operacional | Windows 11 — 64 bits |
+| Linguagem utilizada | Python 3.12 |
 | Biblioteca de paralelização | `multiprocessing` |
-| Compilador / Versão | CPython |
+| Implementação | CPython |
 
 ---
 
 ## 3. Metodologia de Testes
 
-O tempo foi medido usando `time.perf_counter()`, contando o tempo total da análise, desde o início do processamento até a consolidação dos resultados.
+O tempo foi medido usando `time.perf_counter()`, contando o tempo total da análise desde o início do processamento até a consolidação dos resultados parciais.
 
-A versão sequencial percorre o CSV inteiro em um único processo. A versão paralela divide o arquivo em partes por offset de bytes, alinhando os cortes em quebras de linha para evitar registros cortados. Cada processo analisa sua parte e retorna resultados parciais, que depois são reduzidos em um resultado final.
+A versão sequencial percorre o CSV inteiro em um único processo. A versão paralela divide o arquivo em partes por offset de bytes, alinhando os cortes em quebras de linha para evitar registros cortados. Cada processo analisa sua parte de forma independente e retorna resultados parciais, que são reduzidos em um resultado final pelo processo principal.
 
-Em cada registro, o programa executa tarefas como:
+Em cada registro, o programa executa:
 
-- Conversão monetária com `Decimal`
+- Conversão monetária com `Decimal` (precisão de centavos)
 - Parse real de datas com `datetime.strptime`
-- Cálculo estimado de ICMS
-- Validação de `valor_total = quantidade * preço_unitário - desconto`
+- Cálculo estimado de ICMS por alíquota
+- Validação de `valor_total = quantidade × preço_unitário − desconto`
 - Agregação por produto, estado, cidade, CNPJ, categoria e mês
 - Cálculo de ticket médio, desvio padrão e score de risco fiscal
-- Geração de rankings
+- Geração de rankings com `heapq`
 
 ### Configurações testadas
 
-- 1 processo
-- 2 processos
-- 4 processos
-- 8 processos
-- 12 processos
+- Sequencial puro (baseline, sem pool)
+- 2 processos paralelos
+- 4 processos paralelos
+- 8 processos paralelos
+- 12 processos paralelos
+
+> O teste com 1 processo paralelo foi omitido da tabela principal porque o `multiprocessing.Pool` tem overhead de fork, pickle e IPC mesmo sem paralelismo real, resultando em speedup < 1. Esse comportamento é esperado e previsto pela Lei de Amdahl.
 
 ---
 
@@ -76,26 +73,26 @@ Em cada registro, o programa executa tarefas como:
 
 | Nº Processos | Tempo de Execução (s) |
 |:------------:|:---------------------:|
-| 1            | 133.9281              |
-| 2            | 68.6179               |
-| 4            | 35.8380               |
-| 8            | 20.4565               |
-| 12           | 18.0960               |
+| Sequencial   | 232,2662              |
+| 2            | 135,8284              |
+| 4            | 70,3368               |
+| 8            | 39,7097               |
+| 12           | 34,7355               |
 
 ---
 
 ## 5. Cálculo de Speedup e Eficiência
 
-O **speedup** mostra quantas vezes a execução paralela ficou mais rápida em relação ao tempo sequencial:
+O **speedup** mede quantas vezes a execução paralela ficou mais rápida em relação ao baseline sequencial puro:
 
-```text
+```
 Speedup(p) = T_sequencial / T(p)
 ```
 
-A **eficiência** mostra o quanto os processos foram aproveitados:
+A **eficiência** mede o aproveitamento médio de cada processo:
 
-```text
-Eficiência(p) = Speedup(p) / p
+```
+Eficiência(p) = Speedup(p) / p × 100%
 ```
 
 ---
@@ -104,13 +101,13 @@ Eficiência(p) = Speedup(p) / p
 
 | Processos | Tempo (s) | Speedup | Eficiência |
 |:---------:|:---------:|:-------:|:----------:|
-| 1         | 133.9281  | 0.88x   | 88.0%      |
-| 2         | 68.6179   | 1.73x   | 86.5%      |
-| 4         | 35.8380   | 3.30x   | 82.5%      |
-| 8         | 20.4565   | 5.79x   | 72.4%      |
-| 12        | 18.0960   | 6.54x   | 54.5%      |
+| Seq.      | 232,2662  | 1,00×   | —          |
+| 2         | 135,8284  | 1,71×   | 85,5%      |
+| 4         | 70,3368   | 3,30×   | 82,5%      |
+| 8         | 39,7097   | 5,85×   | 73,1%      |
+| 12        | 34,7355   | 6,69×   | 55,8%      |
 
-> **Melhor resultado: 12 processos (18.0960s)**
+> **Melhor resultado: 12 processos — 34,7355s — speedup de 6,69×**
 
 ---
 
@@ -126,34 +123,32 @@ Eficiência(p) = Speedup(p) / p
 
 ## 8. Análise dos Resultados
 
-Os resultados mostram ganho consistente conforme o número de processos aumenta. Com 2 processos, o tempo caiu de 133.9281s para 68.6179s, quase reduzindo pela metade. Com 4 processos, o speedup chegou a 3.30x, ainda com eficiência alta de 82.5%.
+Os resultados mostram ganho consistente conforme o número de processos aumenta. Com 2 processos, o tempo caiu de 232,2662s para 135,8284s — redução de 41,5%. Com 4 processos, o speedup chegou a 3,30×, ainda com eficiência elevada de 82,5%.
 
-O melhor tempo foi obtido com **12 processos**, chegando a 18.0960s e speedup de 6.54x. Isso mostra que, mesmo o Ryzen 7 5700X tendo 8 núcleos físicos, usar mais processos que núcleos ainda trouxe ganho neste caso, provavelmente porque parte do tempo envolve leitura do arquivo, parsing de CSV, criação de objetos `Decimal` e espera por memória/cache.
+O melhor tempo foi obtido com **12 processos**, chegando a 34,7355s e speedup de 6,69×. Vale notar que usar 12 processos em um processador com 8 núcleos físicos ainda trouxe ganho, o que indica que parte do tempo de processamento envolve operações que liberam o núcleo momentaneamente — como leitura de arquivo, alocação de memória e parsing de texto — permitindo que threads lógicas extras sejam aproveitadas.
 
-A eficiência diminuiu conforme os processos aumentaram. Isso é esperado, pois há overhead de criação e gerenciamento de processos, disputa por memória/cache, acesso simultâneo ao arquivo e custo de redução dos resultados parciais. Mesmo assim, a eficiência com 8 processos ainda foi boa, chegando a 72.4%.
+A eficiência diminuiu progressivamente com o aumento de processos. Isso é previsto pela **Lei de Amdahl**: toda tarefa tem uma fração serial que não pode ser paralelizada (leitura do disco, redução dos resultados, gerenciamento do pool), e esse custo fixo passa a dominar conforme o número de processos cresce.
 
 **Principais fatores limitantes:**
 
-- Leitura de um CSV grande em disco
-- Parsing de texto e conversões por linha
-- Uso de `Decimal`, que é mais correto para valores monetários, mas mais pesado que `float`
-- Overhead de criação e comunicação entre processos
-- Disputa por memória/cache ao usar muitos processos
+- Leitura de um CSV de ~1,9 GB em disco (gargalo de I/O)
+- Parsing de texto e conversões `Decimal` por linha (CPU-bound pesado)
+- Overhead de criação e gerenciamento de processos pelo `mp.Pool`
+- Custo de serialização com `pickle` na comunicação entre processos
+- Disputa por cache L3 ao usar muitos processos simultaneamente
 
 ---
 
 ## 9. Conclusão
 
-O paralelismo com `multiprocessing` trouxe uma melhora expressiva no processamento das notas fiscais. O tempo caiu de 133.9281s com 1 processo para 18.0960s com 12 processos.
+O paralelismo com `multiprocessing` trouxe melhora expressiva no processamento das 16 milhões de notas fiscais. O tempo caiu de **232,2662s** no sequencial para **34,7355s** com 12 processos — uma redução de aproximadamente 85% no tempo total.
 
-O melhor resultado foi obtido com **12 processos**, alcançando speedup de **6.54x**. O ganho não foi perfeitamente linear porque o processamento possui overhead de I/O, parsing, agregação e redução dos resultados parciais.
-
-Mesmo assim, o experimento comprova que o uso de múltiplos processos é eficiente para esse tipo de análise fiscal pesada, principalmente porque o trabalho por linha é independente e pode ser dividido entre vários processos.
+O ganho não foi perfeitamente linear porque o processamento possui frações seriais inevitáveis (I/O, parsing, redução dos resultados parciais). Mesmo assim, o experimento comprova que o uso de múltiplos processos é eficiente para esse tipo de análise fiscal pesada, especialmente porque o trabalho por linha é independente e pode ser dividido entre processos sem necessidade de sincronização durante o processamento.
 
 **Melhorias futuras:**
 
-- Executar cada configuração mais de uma vez e calcular média/desvio padrão
-- Testar 16 processos, já que o Ryzen 7 5700X possui 16 threads lógicas
-- Comparar CSV com formatos mais eficientes, como Parquet
-- Testar `ProcessPoolExecutor` do `concurrent.futures`
-- Medir separadamente tempo de leitura, processamento e redução
+- Executar cada configuração múltiplas vezes e calcular média e desvio padrão dos tempos
+- Testar 16 processos (igual ao número de threads lógicas do Ryzen 7 5700X)
+- Comparar CSV com formatos binários mais eficientes, como Parquet ou Arrow
+- Testar `ProcessPoolExecutor` do `concurrent.futures` como alternativa ao `mp.Pool`
+- Medir separadamente tempo de leitura, processamento por linha e redução final

@@ -1,26 +1,69 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="620" height="390" viewBox="0 0 620 390">
-  <rect width="620" height="390" fill="#ffffff"/>
-  <text x="310" y="32" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#222">Tempo de Execução</text>
-  <text x="310" y="56" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#666">menor é melhor</text>
-  <line x1="70" y1="320" x2="580" y2="320" stroke="#333" stroke-width="1"/>
-  <line x1="70" y1="80" x2="70" y2="320" stroke="#333" stroke-width="1"/>
-  <line x1="70" y1="260" x2="580" y2="260" stroke="#e5e5e5"/>
-  <line x1="70" y1="200" x2="580" y2="200" stroke="#e5e5e5"/>
-  <line x1="70" y1="140" x2="580" y2="140" stroke="#e5e5e5"/>
-  <rect x="105" y="80" width="54" height="240" rx="4" fill="#c84b31"/>
-  <rect x="205" y="197" width="54" height="123" rx="4" fill="#e08a47"/>
-  <rect x="305" y="256" width="54" height="64" rx="4" fill="#e8a87c"/>
-  <rect x="405" y="283" width="54" height="37" rx="4" fill="#6ab187"/>
-  <rect x="505" y="288" width="54" height="32" rx="4" fill="#3f8f68"/>
-  <text x="132" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">1</text>
-  <text x="232" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">2</text>
-  <text x="332" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">4</text>
-  <text x="432" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">8</text>
-  <text x="532" y="344" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#333">12</text>
-  <text x="325" y="374" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#555">Processos</text>
-  <text x="132" y="72" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">133.9s</text>
-  <text x="232" y="189" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">68.6s</text>
-  <text x="332" y="248" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">35.8s</text>
-  <text x="432" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">20.5s</text>
-  <text x="532" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#222">18.1s</text>
+<svg viewBox="0 0 520 340" xmlns="http://www.w3.org/2000/svg" font-family="'DM Mono', 'Courier New', monospace">
+  <!-- fundo -->
+  <rect width="520" height="340" fill="#0f0e0c"/>
+
+  <!-- título -->
+  <text x="260" y="30" text-anchor="middle" fill="#e8e0d0" font-size="13" font-weight="bold">Tempo de Execução por Nº de Processos</text>
+  <text x="260" y="48" text-anchor="middle" fill="#7a7060" font-size="10">16.000.000 registros · AMD Ryzen 7 5700X</text>
+
+  <!-- área do gráfico: x=60..480, y=70..280 -->
+  <!-- linhas de grade horizontais -->
+  <line x1="60" y1="280" x2="480" y2="280" stroke="#2e2b26" stroke-width="1"/>
+  <line x1="60" y1="222" x2="480" y2="222" stroke="#2e2b26" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <line x1="60" y1="164" x2="480" y2="164" stroke="#2e2b26" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <line x1="60" y1="106" x2="480" y2="106" stroke="#2e2b26" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <line x1="60" y1="70"  x2="480" y2="70"  stroke="#2e2b26" stroke-width="0.5" stroke-dasharray="4,3"/>
+
+  <!-- labels eixo Y (0..240s mapeado em y=280..70) -->
+  <!-- escala: 210 px / 240s = 0.875 px/s -->
+  <!-- seq=232.27 → y=280-(232.27*0.875)=280-203.2=76.8 -->
+  <!-- 2p=135.83  → y=280-(135.83*0.875)=280-118.9=161.1 -->
+  <!-- 4p=70.34   → y=280-(70.34*0.875)=280-61.5=218.5 -->
+  <!-- 8p=39.71   → y=280-(39.71*0.875)=280-34.7=245.3 -->
+  <!-- 12p=34.74  → y=280-(34.74*0.875)=280-30.4=249.6 -->
+  <text x="55" y="283" text-anchor="end" fill="#7a7060" font-size="9">0s</text>
+  <text x="55" y="225" text-anchor="end" fill="#7a7060" font-size="9">60s</text>
+  <text x="55" y="167" text-anchor="end" fill="#7a7060" font-size="9">120s</text>
+  <text x="55" y="109" text-anchor="end" fill="#7a7060" font-size="9">180s</text>
+  <text x="55" y="73"  text-anchor="end" fill="#7a7060" font-size="9">240s</text>
+
+  <!-- eixo Y label -->
+  <text x="18" y="175" text-anchor="middle" fill="#7a7060" font-size="9" transform="rotate(-90,18,175)">Tempo (s)</text>
+
+  <!-- barras — x positions: seq=90, 2p=180, 4p=270, 8p=360, 12p=450; width=50 -->
+  <!-- Seq -->
+  <rect x="65"  y="77"  width="50" height="203" fill="#c84b31" rx="2"/>
+  <text x="90"  y="72"  text-anchor="middle" fill="#e8e0d0" font-size="9">232,3s</text>
+
+  <!-- 2 proc -->
+  <rect x="155" y="161" width="50" height="119" fill="#e8a87c" rx="2"/>
+  <text x="180" y="156" text-anchor="middle" fill="#e8e0d0" font-size="9">135,8s</text>
+
+  <!-- 4 proc -->
+  <rect x="245" y="218" width="50" height="62"  fill="#e8a87c" rx="2"/>
+  <text x="270" y="213" text-anchor="middle" fill="#e8e0d0" font-size="9">70,3s</text>
+
+  <!-- 8 proc -->
+  <rect x="335" y="245" width="50" height="35"  fill="#6ab187" rx="2"/>
+  <text x="360" y="240" text-anchor="middle" fill="#e8e0d0" font-size="9">39,7s</text>
+
+  <!-- 12 proc -->
+  <rect x="425" y="250" width="50" height="30"  fill="#6ab187" rx="2"/>
+  <text x="450" y="245" text-anchor="middle" fill="#e8e0d0" font-size="9">34,7s</text>
+
+  <!-- labels eixo X -->
+  <text x="90"  y="296" text-anchor="middle" fill="#7a7060" font-size="9">Seq.</text>
+  <text x="180" y="296" text-anchor="middle" fill="#7a7060" font-size="9">2</text>
+  <text x="270" y="296" text-anchor="middle" fill="#7a7060" font-size="9">4</text>
+  <text x="360" y="296" text-anchor="middle" fill="#7a7060" font-size="9">8</text>
+  <text x="450" y="296" text-anchor="middle" fill="#7a7060" font-size="9">12</text>
+  <text x="260" y="314" text-anchor="middle" fill="#7a7060" font-size="9">Nº de Processos</text>
+
+  <!-- legenda -->
+  <rect x="60"  y="325" width="10" height="8" fill="#c84b31" rx="1"/>
+  <text x="74"  y="333" fill="#7a7060" font-size="8">Sequencial</text>
+  <rect x="135" y="325" width="10" height="8" fill="#e8a87c" rx="1"/>
+  <text x="149" y="333" fill="#7a7060" font-size="8">Paralelo</text>
+  <rect x="200" y="325" width="10" height="8" fill="#6ab187" rx="1"/>
+  <text x="214" y="333" fill="#7a7060" font-size="8">Melhor</text>
 </svg>
