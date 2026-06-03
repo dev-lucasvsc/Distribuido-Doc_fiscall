@@ -114,9 +114,11 @@ Eficiência(p) = Speedup(p) / p × 100%
 ## 7. Gráficos
 
 <p align="center">
-  <img src="tempo.execucao.svg" alt="Gráfico de tempo de execução" width="32%">
-  <img src="speedup.svg" alt="Gráfico de speedup" width="32%">
-  <img src="eficiencia.svg" alt="Gráfico de eficiência" width="32%">
+  <img src="tempo.execucao.svg" alt="Gráfico de tempo de execução" width="52%">
+  
+  <img src="speedup.svg" alt="Gráfico de speedup" width="52%">
+  
+  <img src="eficiencia.svg" alt="Gráfico de eficiência" width="52%">
 </p>
 
 ---
