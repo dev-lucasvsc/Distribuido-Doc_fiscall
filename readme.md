@@ -181,12 +181,4 @@ O paralelismo com `multiprocessing` trouxe melhora expressiva no processamento d
 
 O ganho não foi perfeitamente linear porque o processamento possui frações seriais inevitáveis (I/O, redução dos resultados parciais, overhead do pool). A queda de eficiência observada de 62% para 52% é esperada e explicada pela Lei de Amdahl, e não representa falha de implementação.
 
-O experimento comprova que o uso de múltiplos processos é eficiente para esse tipo de análise fiscal pesada, especialmente porque o trabalho por linha é independente e pode ser dividido entre processos sem necessidade de sincronização durante o processamento.
-
-**Melhorias futuras:**
-
-- Executar cada configuração múltiplas vezes e calcular média e desvio padrão dos tempos
-- Testar 16 processos (igual ao número de threads lógicas do Ryzen 7 5700X)
-- Comparar CSV com formatos binários mais eficientes, como Parquet ou Arrow
-- Testar `ProcessPoolExecutor` do `concurrent.futures` como alternativa ao `mp.Pool`
-- Medir separadamente tempo de leitura, processamento por linha e redução final
+O experimento comprova que o uso de múltiplos processos é eficiente para esse tipo de análise fiscal pesada, especialmente porque o trabalho por linha é independente e pode ser dividido entre processos sem necessidade de sincronização durante o período.
