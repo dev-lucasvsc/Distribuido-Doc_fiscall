@@ -1,0 +1,60 @@
+<svg viewBox="0 0 520 340" xmlns="http://www.w3.org/2000/svg" font-family="'DM Mono', 'Courier New', monospace">
+  <rect width="520" height="340" fill="#0f0e0c"/>
+  <text x="260" y="30" text-anchor="middle" fill="#e8e0d0" font-size="13" font-weight="bold">Speedup por Nº de Processos</text>
+  <text x="260" y="48" text-anchor="middle" fill="#7a7060" font-size="10">Speedup = T_sequencial / T(p) · baseline = 241,8228s</text>
+
+  <!-- escala 0..8 → 210px / 8 = 26.25px per unit -->
+  <!-- y = 280 - valor*26.25 -->
+  <!-- ideal: 2→227.5, 4→175, 8→70, 12→clamp70 -->
+  <!-- real: 1.24→247.4, 2.32→219.1, 4.46→162.9, 6.33→113.8 -->
+
+  <line x1="60" y1="280" x2="480" y2="280" stroke="#2e2b26" stroke-width="1"/>
+  <line x1="60" y1="280" x2="60"  y2="70"  stroke="#2e2b26" stroke-width="1"/>
+  <line x1="60" y1="227" x2="480" y2="227" stroke="#2e2b26" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <line x1="60" y1="175" x2="480" y2="175" stroke="#2e2b26" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <line x1="60" y1="122" x2="480" y2="122" stroke="#2e2b26" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <line x1="60" y1="70"  x2="480" y2="70"  stroke="#2e2b26" stroke-width="0.5" stroke-dasharray="4,3"/>
+
+  <text x="55" y="283" text-anchor="end" fill="#7a7060" font-size="9">0×</text>
+  <text x="55" y="230" text-anchor="end" fill="#7a7060" font-size="9">2×</text>
+  <text x="55" y="178" text-anchor="end" fill="#7a7060" font-size="9">4×</text>
+  <text x="55" y="125" text-anchor="end" fill="#7a7060" font-size="9">6×</text>
+  <text x="55" y="73"  text-anchor="end" fill="#7a7060" font-size="9">8×</text>
+  <text x="18" y="175" text-anchor="middle" fill="#7a7060" font-size="9" transform="rotate(-90,18,175)">Speedup</text>
+
+  <!-- linha ideal -->
+  <polyline points="90,280 180,227 270,175 360,122 450,96"
+            fill="none" stroke="#2e2b26" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="462" y="93" fill="#2e2b26" font-size="8">ideal</text>
+
+  <!-- linha real: seq(90,280) 2p(180,247) 4p(270,219) 8p(360,163) 12p(450,114) -->
+  <polyline points="90,280 180,247 270,219 360,163 450,114"
+            fill="none" stroke="#c84b31" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <circle cx="90"  cy="280" r="5" fill="#c84b31"/>
+  <circle cx="180" cy="247" r="5" fill="#c84b31"/>
+  <circle cx="270" cy="219" r="5" fill="#c84b31"/>
+  <circle cx="360" cy="163" r="5" fill="#c84b31"/>
+  <circle cx="450" cy="114" r="5" fill="#6ab187"/>
+
+  <text x="90"  y="274" text-anchor="middle" fill="#7a7060" font-size="8">1,00×</text>
+  <text x="180" y="241" text-anchor="middle" fill="#e8e0d0" font-size="8">1,24×</text>
+  <text x="270" y="213" text-anchor="middle" fill="#e8e0d0" font-size="8">2,32×</text>
+  <text x="360" y="157" text-anchor="middle" fill="#e8e0d0" font-size="8">4,46×</text>
+  <text x="450" y="108" text-anchor="middle" fill="#6ab187" font-size="8">6,33×</text>
+
+  <text x="90"  y="296" text-anchor="middle" fill="#7a7060" font-size="9">Seq.</text>
+  <text x="180" y="296" text-anchor="middle" fill="#7a7060" font-size="9">2</text>
+  <text x="270" y="296" text-anchor="middle" fill="#7a7060" font-size="9">4</text>
+  <text x="360" y="296" text-anchor="middle" fill="#7a7060" font-size="9">8</text>
+  <text x="450" y="296" text-anchor="middle" fill="#7a7060" font-size="9">12</text>
+  <text x="260" y="314" text-anchor="middle" fill="#7a7060" font-size="9">Nº de Processos</text>
+
+  <line x1="60" y1="329" x2="78" y2="329" stroke="#c84b31" stroke-width="2.5"/>
+  <circle cx="69" cy="329" r="4" fill="#c84b31"/>
+  <text x="82" y="333" fill="#7a7060" font-size="8">Speedup real</text>
+  <line x1="155" y1="329" x2="173" y2="329" stroke="#2e2b26" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="177" y="333" fill="#7a7060" font-size="8">Speedup ideal</text>
+  <circle cx="280" cy="329" r="4" fill="#6ab187"/>
+  <text x="287" y="333" fill="#7a7060" font-size="8">Melhor (12p)</text>
+</svg>
