@@ -107,16 +107,17 @@ Eficiência(p) = Speedup(p) / p × 100%
 | 8         | 39,7097   | 5,85×   | 73,1%      |
 | 12        | 34,7355   | 6,69×   | 55,8%      |
 
-> **Melhor resultado: 12 processos — 34,7355s — speedup de 6,69×**
 
 ---
 
 ## 7. Gráficos
 
 <p align="center">
-  <img src="tempo.execucao.svg" alt="Gráfico de tempo de execução" width="32%">
-  <img src="speedup.svg" alt="Gráfico de speedup" width="32%">
-  <img src="eficiencia.svg" alt="Gráfico de eficiência" width="32%">
+  <img src="tempo.execucao.svg" alt="Gráfico de tempo de execução" width="52%">
+  
+  <img src="speedup.svg" alt="Gráfico de speedup" width="52%">
+  
+  <img src="eficiencia.svg" alt="Gráfico de eficiência" width="52%">
 </p>
 
 ---
@@ -145,10 +146,3 @@ O paralelismo com `multiprocessing` trouxe melhora expressiva no processamento d
 
 O ganho não foi perfeitamente linear porque o processamento possui frações seriais inevitáveis (I/O, parsing, redução dos resultados parciais). Mesmo assim, o experimento comprova que o uso de múltiplos processos é eficiente para esse tipo de análise fiscal pesada, especialmente porque o trabalho por linha é independente e pode ser dividido entre processos sem necessidade de sincronização durante o processamento.
 
-**Melhorias futuras:**
-
-- Executar cada configuração múltiplas vezes e calcular média e desvio padrão dos tempos
-- Testar 16 processos (igual ao número de threads lógicas do Ryzen 7 5700X)
-- Comparar CSV com formatos binários mais eficientes, como Parquet ou Arrow
-- Testar `ProcessPoolExecutor` do `concurrent.futures` como alternativa ao `mp.Pool`
-- Medir separadamente tempo de leitura, processamento por linha e redução final
