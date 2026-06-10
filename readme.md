@@ -6,7 +6,7 @@
 **Aluno 1:** Lucas Vasconcelos Pessoa de Oliveira  
 **Aluno 2:** Joao Gabriel Lucas Pinheiro de Lima  
 
-**Data:** 01/06/2026  
+**Data:** 10/06/2026  
 
 ---
 
@@ -69,19 +69,35 @@ Em cada registro, o programa executa:
 
 ---
 
-## 4. Resultados Experimentais
+## 4. Evidências de Execução
 
-| Nº Processos | Tempo de Execução (s) |
-|:------------:|:---------------------:|
-| Sequencial   | 232,2662              |
-| 2            | 135,8284              |
-| 4            | 70,3368               |
-| 8            | 39,7097               |
-| 12           | 34,7355               |
+As imagens abaixo foram capturadas do Gerenciador de Tarefas do Windows durante a execução, mostrando o uso real de CPU crescendo conforme o número de processos aumenta:
+
+| Configuração | Utilização de CPU observada |
+|:------------:|:---------------------------:|
+| Sequencial   | ~12%                        |
+| 2 processos  | ~14%                        |
+| 4 processos  | ~32%                        |
+| 8 processos  | ~54%                        |
+| 12 processos | ~77%                        |
+
+Isso confirma que o paralelismo está sendo aproveitado de forma real pelo sistema operacional, distribuindo a carga entre os núcleos físicos e lógicos do Ryzen 7 5700X.
 
 ---
 
-## 5. Cálculo de Speedup e Eficiência
+## 5. Resultados Experimentais
+
+| Nº Processos | Tempo de Execução (s) |
+|:------------:|:---------------------:|
+| Sequencial   | 241,8228              |
+| 2            | 195,7147              |
+| 4            | 104,1233              |
+| 8            | 54,2650               |
+| 12           | 38,2255               |
+
+---
+
+## 6. Cálculo de Speedup e Eficiência
 
 O **speedup** mede quantas vezes a execução paralela ficou mais rápida em relação ao baseline sequencial puro:
 
@@ -97,52 +113,80 @@ Eficiência(p) = Speedup(p) / p × 100%
 
 ---
 
-## 6. Tabela de Resultados
+## 7. Tabela de Resultados
 
 | Processos | Tempo (s) | Speedup | Eficiência |
 |:---------:|:---------:|:-------:|:----------:|
-| Seq.      | 232,2662  | 1,00×   | —          |
-| 2         | 135,8284  | 1,71×   | 85,5%      |
-| 4         | 70,3368   | 3,30×   | 82,5%      |
-| 8         | 39,7097   | 5,85×   | 73,1%      |
-| 12        | 34,7355   | 6,69×   | 55,8%      |
+| Seq.      | 241,8228  | 1,00×   | —          |
+| 2         | 195,7147  | 1,24×   | 62,0%      |
+| 4         | 104,1233  | 2,32×   | 58,0%      |
+| 8         | 54,2650   | 4,46×   | 55,8%      |
+| 12        | 38,2255   | 6,33×   | 52,8%      |
 
+> **Melhor resultado: 12 processos — 38,2255s — speedup de 6,33×**
 
 ---
 
-## 7. Gráficos
+## 8. Gráficos
 
 <p align="center">
-  <img src="tempo.execucao.svg" alt="Gráfico de tempo de execução" width="52%">
-  
-  <img src="speedup.svg" alt="Gráfico de speedup" width="52%">
-  
-  <img src="eficiencia.svg" alt="Gráfico de eficiência" width="52%">
+  <img src="tempo.execucao.svg" alt="Gráfico de tempo de execução" width="32%">
+  <img src="speedup.svg" alt="Gráfico de speedup" width="32%">
+  <img src="eficiencia.svg" alt="Gráfico de eficiência" width="32%">
 </p>
 
 ---
 
-## 8. Análise dos Resultados
+## 9. Por que a Eficiência Cai com Mais Processos?
 
-Os resultados mostram ganho consistente conforme o número de processos aumenta. Com 2 processos, o tempo caiu de 232,2662s para 135,8284s — redução de 41,5%. Com 4 processos, o speedup chegou a 3,30×, ainda com eficiência elevada de 82,5%.
+A queda de eficiência de 62,0% (2 processos) para 52,8% (12 processos) é um comportamento esperado e previsto teoricamente pela **Lei de Amdahl**.
 
-O melhor tempo foi obtido com **12 processos**, chegando a 34,7355s e speedup de 6,69×. Vale notar que usar 12 processos em um processador com 8 núcleos físicos ainda trouxe ganho, o que indica que parte do tempo de processamento envolve operações que liberam o núcleo momentaneamente — como leitura de arquivo, alocação de memória e parsing de texto — permitindo que threads lógicas extras sejam aproveitadas.
+A Lei de Amdahl estabelece que toda tarefa paralela possui uma fração serial inevitável — partes do trabalho que não podem ser divididas entre processos. Quanto maior o número de processos, mais essa fração serial pesa no tempo total, limitando o ganho real.
 
-A eficiência diminuiu progressivamente com o aumento de processos. Isso é previsto pela **Lei de Amdahl**: toda tarefa tem uma fração serial que não pode ser paralelizada (leitura do disco, redução dos resultados, gerenciamento do pool), e esse custo fixo passa a dominar conforme o número de processos cresce.
+No caso deste projeto, as frações seriais identificadas são:
 
-**Principais fatores limitantes:**
+**Leitura do arquivo em disco.** O SSD possui uma fila de I/O única. Com 12 processos lendo simultaneamente, há contenção — os processos se esperam na fila de acesso ao disco, mesmo em NVMe.
 
-- Leitura de um CSV de ~1,9 GB em disco (gargalo de I/O)
-- Parsing de texto e conversões `Decimal` por linha (CPU-bound pesado)
-- Overhead de criação e gerenciamento de processos pelo `mp.Pool`
-- Custo de serialização com `pickle` na comunicação entre processos
-- Disputa por cache L3 ao usar muitos processos simultaneamente
+**Redução dos resultados parciais.** Após cada worker terminar, um único processo consolida todos os resultados. Esse custo cresce linearmente com o número de workers.
+
+**Overhead do `mp.Pool`.** Fork de processo, serialização com `pickle` e comunicação IPC existem para cada worker. Com 12 processos, esse overhead acumula e não é paralelizável.
+
+**Disputa por cache L3.** O Ryzen 7 5700X possui 32 MB de cache L3 compartilhado entre os 8 núcleos. Com 12 processos ativos, há pressão sobre esse cache, causando cache misses que custam centenas de ciclos cada.
+
+Por isso, mesmo que o speedup continue crescendo (o tempo total continua caindo), a **eficiência por processo diminui** — cada processo adicional contribui menos do que o anterior.
+
+Vale destacar que eficiência baixa não significa que usar mais processos foi uma má escolha. O objetivo do experimento é minimizar o tempo de execução. Com 12 processos e 52,8% de eficiência, o tempo foi de 38,2s — significativamente melhor que os 54,3s com 8 processos e 55,8% de eficiência.
 
 ---
 
-## 9. Conclusão
+## 10. Análise dos Resultados
 
-O paralelismo com `multiprocessing` trouxe melhora expressiva no processamento das 16 milhões de notas fiscais. O tempo caiu de **232,2662s** no sequencial para **34,7355s** com 12 processos — uma redução de aproximadamente 85% no tempo total.
+Os resultados mostram ganho consistente conforme o número de processos aumenta. Com 4 processos, o tempo caiu de 241,8s para 104,1s — redução de 57%. Com 8 processos chegou a 54,3s, e com 12 processos ao melhor resultado de 38,2s.
 
-O ganho não foi perfeitamente linear porque o processamento possui frações seriais inevitáveis (I/O, parsing, redução dos resultados parciais). Mesmo assim, o experimento comprova que o uso de múltiplos processos é eficiente para esse tipo de análise fiscal pesada, especialmente porque o trabalho por linha é independente e pode ser dividido entre processos sem necessidade de sincronização durante o processamento.
+O uso de CPU observado no Gerenciador de Tarefas confirma o funcionamento real do paralelismo: com 12 processos, o Ryzen 7 5700X atingiu 77% de utilização, evidenciando que todos os núcleos estavam ativos simultaneamente.
 
+**Principais fatores limitantes:**
+
+- Leitura de um CSV de ~1,9 GB em disco (contenção de I/O)
+- Parsing de texto e conversões `Decimal` por linha (CPU-bound pesado)
+- Overhead de criação e gerenciamento de processos pelo `mp.Pool`
+- Custo de serialização com `pickle` na comunicação entre processos
+- Pressão sobre o cache L3 compartilhado com múltiplos processos ativos
+
+---
+
+## 11. Conclusão
+
+O paralelismo com `multiprocessing` trouxe melhora expressiva no processamento das 16 milhões de notas fiscais. O tempo caiu de **241,8228s** no sequencial para **38,2255s** com 12 processos — redução de aproximadamente **84% no tempo total**.
+
+O ganho não foi perfeitamente linear porque o processamento possui frações seriais inevitáveis (I/O, redução dos resultados parciais, overhead do pool). A queda de eficiência observada de 62% para 52% é esperada e explicada pela Lei de Amdahl, e não representa falha de implementação.
+
+O experimento comprova que o uso de múltiplos processos é eficiente para esse tipo de análise fiscal pesada, especialmente porque o trabalho por linha é independente e pode ser dividido entre processos sem necessidade de sincronização durante o processamento.
+
+**Melhorias futuras:**
+
+- Executar cada configuração múltiplas vezes e calcular média e desvio padrão dos tempos
+- Testar 16 processos (igual ao número de threads lógicas do Ryzen 7 5700X)
+- Comparar CSV com formatos binários mais eficientes, como Parquet ou Arrow
+- Testar `ProcessPoolExecutor` do `concurrent.futures` como alternativa ao `mp.Pool`
+- Medir separadamente tempo de leitura, processamento por linha e redução final
