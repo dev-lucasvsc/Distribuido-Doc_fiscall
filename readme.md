@@ -6,7 +6,7 @@
 **Aluno 1:** Lucas Vasconcelos Pessoa de Oliveira  
 **Aluno 2:** Joao Gabriel Lucas Pinheiro de Lima  
 
-**Data:** 10/06/2026  
+**Data:** 17/06/2026  
 
 ---
 
@@ -89,11 +89,11 @@ Isso confirma que o paralelismo está sendo aproveitado de forma real pelo siste
 
 | Nº Processos | Tempo de Execução (s) |
 |:------------:|:---------------------:|
-| Sequencial   | 241,8228              |
-| 2            | 195,7147              |
-| 4            | 104,1233              |
-| 8            | 54,2650               |
-| 12           | 38,2255               |
+| Sequencial   | 237,7843              |
+| 2            | 133,1444              |
+| 4            | 68,9927               |
+| 8            | 38,5264               |
+| 12           | 34,5666               |
 
 ---
 
@@ -115,15 +115,16 @@ Eficiência(p) = Speedup(p) / p × 100%
 
 ## 7. Tabela de Resultados
 
+
 | Processos | Tempo (s) | Speedup | Eficiência |
 |:---------:|:---------:|:-------:|:----------:|
-| Seq.      | 241,8228  | 1,00×   | —          |
-| 2         | 195,7147  | 1,24×   | 62,0%      |
-| 4         | 104,1233  | 2,32×   | 58,0%      |
-| 8         | 54,2650   | 4,46×   | 55,8%      |
-| 12        | 38,2255   | 6,33×   | 52,8%      |
+| Seq.      | 237,7843  | 1,00×   | —          |
+| 2         | 133,1444  | 1,79×   | 89,5%      |
+| 4         | 68,9927   | 3,45×   | 86,2%      |
+| 8         | 38,5264   | 6,17×   | 77,1%      |
+| 12        | 34,5666   | 6,88×   | 57,3%      |
 
-> **Melhor resultado: 12 processos — 38,2255s — speedup de 6,33×**
+> **Melhor resultado: 12 processos — 34,5666s — speedup de 6,88×**
 
 ---
 
@@ -139,46 +140,92 @@ Eficiência(p) = Speedup(p) / p × 100%
 
 ## 9. Por que a Eficiência Cai com Mais Processos?
 
-A queda de eficiência de 62,0% (2 processos) para 52,8% (12 processos) é um comportamento esperado e previsto teoricamente pela **Lei de Amdahl**.
+A queda de eficiência de 89,5% (2 processos) para 57,3% (12 processos) tem uma causa concreta e mensurável, identificada a partir de uma rodada de testes adicional com 6, 7, 8, 9, 10, 11 e 12 processos.
 
-A Lei de Amdahl estabelece que toda tarefa paralela possui uma fração serial inevitável — partes do trabalho que não podem ser divididas entre processos. Quanto maior o número de processos, mais essa fração serial pesa no tempo total, limitando o ganho real.
+### Correção em relação a uma hipótese anterior
 
-No caso deste projeto, as frações seriais identificadas são:
+Uma primeira leitura levantou a hipótese de que o gargalo seria a fronteira entre núcleos físicos e lógicos: como a máquina possui 8 núcleos físicos e 16 threads lógicas (SMT/hyper-threading), seria esperado um "degrau" de queda de desempenho exatamente entre 8 e 9 processos, quando processos adicionais passariam a disputar o mesmo núcleo físico via SMT.
 
-**Leitura do arquivo em disco.** O SSD possui uma fila de I/O única. Com 12 processos lendo simultaneamente, há contenção — os processos se esperam na fila de acesso ao disco, mesmo em NVMe.
+Os dados da bateria 6→12 não confirmam essa hipótese. O ganho marginal de tempo por processo adicional é decrescente de forma suave e contínua, sem nenhum salto abrupto na fronteira de 8 núcleos:
 
-**Redução dos resultados parciais.** Após cada worker terminar, um único processo consolida todos os resultados. Esse custo cresce linearmente com o número de workers.
+| Transição | Tempo ganho |
+|:---------:|:-----------:|
+| 6 → 7     | -4,99s      |
+| 7 → 8     | -2,91s      |
+| 8 → 9     | -1,69s      |
+| 9 → 10    | -0,12s      |
+| 10 → 11   | -1,37s      |
+| 11 → 12   | -1,03s      |
 
-**Overhead do `mp.Pool`.** Fork de processo, serialização com `pickle` e comunicação IPC existem para cada worker. Com 12 processos, esse overhead acumula e não é paralelizável.
+Se o limite fosse a saturação de SMT, esperar-se-ia uma queda brusca exatamente em 8→9, e não é isso que aparece — a curva já está desacelerando desde o 6. A única anomalia é 9→10 (ganho quase nulo), mais provável de ser ruído de medição (execução única, sem repetição, sujeita a variação do agendador do Windows) do que um efeito de arquitetura.
 
-**Disputa por cache L3.** O Ryzen 7 5700X possui 32 MB de cache L3 compartilhado entre os 8 núcleos. Com 12 processos ativos, há pressão sobre esse cache, causando cache misses que custam centenas de ciclos cada.
+### Também há um erro de medição na explicação anterior
 
-Por isso, mesmo que o speedup continue crescendo (o tempo total continua caindo), a **eficiência por processo diminui** — cada processo adicional contribui menos do que o anterior.
+A versão anterior deste relatório apontava a etapa de **redução dos resultados parciais** (`reduzir()`) como uma das causas da perda de eficiência. Isso está tecnicamente incorreto: no código, o cronômetro é parado antes dessa etapa rodar.
 
-Vale destacar que eficiência baixa não significa que usar mais processos foi uma má escolha. O objetivo do experimento é minimizar o tempo de execução. Com 12 processos e 52,8% de eficiência, o tempo foi de 38,2s — significativamente melhor que os 54,3s com 8 processos e 55,8% de eficiência.
+```python
+inicio = time.perf_counter()
+with mp.Pool(processes=n_workers) as pool:
+    parciais = pool.map(processar_chunk, chunks)
+tempo = time.perf_counter() - inicio          # <- cronômetro para AQUI
+resultado = reduzir(parciais, tempo, modo)    # <- reduce roda DEPOIS, fora do timer
+```
+
+Como `reduzir()` executa depois que `tempo` já foi capturado, o custo dessa etapa não influencia nenhum dos valores reportados na Seção 7. A causa real precisa estar dentro da janela que o `with mp.Pool(...)` efetivamente mede: a criação dos processos e o `pool.map()`.
+
+### O que os dados sugerem como causa real
+
+Ajustando os 7 pontos da bateria 6–12 contra dois modelos:
+
+- **Amdahl puro** — `T(p) = a + b/p` → R² = 0,961
+- **Amdahl + overhead linear por processo** — `T(p) = a + b/p + c·p` → R² = 0,986
+
+O segundo modelo explica os dados visivelmente melhor, sem precisar de nenhum limite físico de núcleo. O termo `c` (custo que cresce linearmente com o número de processos) ficou em torno de **1,5s por processo adicional**, o que é mais compatível com:
+
+- **Spawn de processos no Windows.** Diferente de Linux/Mac (que usam `fork`), o `multiprocessing` no Windows usa `spawn`: cada processo novo reabre um interpretador Python do zero e reimporta os módulos. Esse custo existe por processo e cresce com `n_workers`.
+- **IPC de retorno via `pickle`.** Cada worker serializa um dicionário com agregações por produto, estado, cidade, CNPJ, categoria e mês — várias dessas chaves carregando valores `Decimal`, que é mais caro de empacotar/desempacotar do que tipos nativos como `int` ou `float`. Com mais processos, esse custo total de serialização cresce.
+
+Ou seja: a explicação mais defensável não é "acabaram os núcleos físicos", e sim que **cada processo adicional carrega um custo fixo de inicialização e comunicação que nunca é totalmente amortizado pelo trabalho que ele executa** — e esse custo passa a pesar proporcionalmente mais conforme `n_workers` cresce, mesmo com mais CPU disponível.
+
+### Validação ainda pendente
+
+A regressão acima é evidência indireta. Para confirmar com medição direta, a próxima etapa é instrumentar `analisar_paralelo()` separando os três tempos dentro da janela medida:
+
+```python
+t0 = time.perf_counter()
+pool = mp.Pool(processes=n_workers)
+t_spawn = time.perf_counter() - t0
+parciais = pool.map(processar_chunk, chunks)
+t_map = time.perf_counter() - t0 - t_spawn
+pool.close(); pool.join()
+t_join = time.perf_counter() - t0 - t_spawn - t_map
+```
+
+Rodar isso em `p=6` e `p=12` e comparar `t_spawn` mostra diretamente se o overhead de inicialização cresce na ordem de grandeza esperada (~1,5s/processo). Recomenda-se também repetir cada configuração 3 vezes (mediana, não execução única) e comparar com `--modo rapido` (sem `Decimal`/`datetime.strptime`) na mesma faixa 6–12: se a curva de overhead se mantiver parecida mesmo sem a carga aritmética pesada, isso isola definitivamente a causa como custo de infraestrutura de processo (spawn/IPC), e não da computação em si.
+
+Independente da causa exata do overhead, eficiência baixa não significa que usar mais processos foi uma má escolha: o objetivo do experimento é minimizar o tempo de execução, e com 12 processos e 57,3% de eficiência o tempo foi de 34,6s — o menor entre todas as configurações testadas.
 
 ---
 
 ## 10. Análise dos Resultados
 
-Os resultados mostram ganho consistente conforme o número de processos aumenta. Com 4 processos, o tempo caiu de 241,8s para 104,1s — redução de 57%. Com 8 processos chegou a 54,3s, e com 12 processos ao melhor resultado de 38,2s.
+Os resultados mostram ganho consistente conforme o número de processos aumenta. Com 4 processos, o tempo caiu de 237,8s para 69,0s — redução de aproximadamente 71%. Com 8 processos chegou a 38,5s, e com 12 processos ao melhor resultado de 34,6s.
 
-O uso de CPU observado no Gerenciador de Tarefas confirma o funcionamento real do paralelismo: com 12 processos, o Ryzen 7 5700X atingiu 77% de utilização, evidenciando que todos os núcleos estavam ativos simultaneamente.
+A eficiência cai de forma suave e contínua, não em degraus: de 86,2% (4 processos) para 77,1% (8 processos) e 57,3% (12 processos). Uma bateria adicional de testes com 6 a 12 processos (ver Seção 9) mostrou que essa queda não tem relação com a fronteira entre núcleos físicos e lógicos da máquina — o ajuste estatístico que melhor descreve os dados (R² = 0,986) é um modelo de Amdahl com overhead linear por processo, compatível com o custo de `spawn` de processos no Windows e com a serialização (`pickle`) dos resultados parciais via IPC. Isso explica por que o ganho de tempo entre 8 e 12 processos é pequeno (apenas ~4s): cada processo adicional carrega um custo fixo de inicialização e comunicação que nunca é totalmente amortizado pelo trabalho extra que ele executa.
 
 **Principais fatores limitantes:**
 
+- Custo de `spawn` de processos no Windows (reabertura completa do interpretador por worker, sem `fork`)
+- Custo de serialização com `pickle` dos dicionários de resultado parcial (agravado pelo uso de `Decimal`)
 - Leitura de um CSV de ~1,9 GB em disco (contenção de I/O)
 - Parsing de texto e conversões `Decimal` por linha (CPU-bound pesado)
-- Overhead de criação e gerenciamento de processos pelo `mp.Pool`
-- Custo de serialização com `pickle` na comunicação entre processos
-- Pressão sobre o cache L3 compartilhado com múltiplos processos ativos
 
 ---
 
 ## 11. Conclusão
 
-O paralelismo com `multiprocessing` trouxe melhora expressiva no processamento das 16 milhões de notas fiscais. O tempo caiu de **241,8228s** no sequencial para **38,2255s** com 12 processos — redução de aproximadamente **84% no tempo total**.
+O paralelismo com `multiprocessing` trouxe melhora expressiva no processamento das 16 milhões de notas fiscais. O tempo caiu de **237,7843s** no sequencial para **34,5666s** com 12 processos — redução de aproximadamente **85,5% no tempo total**.
 
-O ganho não foi perfeitamente linear porque o processamento possui frações seriais inevitáveis (I/O, redução dos resultados parciais, overhead do pool). A queda de eficiência observada de 62% para 52% é esperada e explicada pela Lei de Amdahl, e não representa falha de implementação.
+O ganho não foi perfeitamente linear, mas a causa não é uma fração serial genérica do tipo previsto pela Lei de Amdahl pura: os dados da bateria 6–12 processos mostram uma queda suave e contínua de eficiência, melhor explicada por um overhead que cresce de forma aproximadamente linear com o número de processos (~1,5s por processo adicional, ajuste com R² = 0,986). Isso é mais coerente com custo de `spawn` no Windows e IPC/`pickle` de retorno do que com saturação de núcleos físicos ou com a etapa de redução dos resultados parciais — esta última, aliás, roda fora da janela cronometrada pelo código, então não pode ser apontada como causa da perda de eficiência observada. Vale notar que o ganho de tempo entre 8 e 12 processos foi modesto (de 38,5264s para 34,5666s), o que sugere que, para essa carga de trabalho e esse hardware, o overhead por processo já se aproxima de consumir os ganhos de paralelização adicionais.
 
-O experimento comprova que o uso de múltiplos processos é eficiente para esse tipo de análise fiscal pesada, especialmente porque o trabalho por linha é independente e pode ser dividido entre processos sem necessidade de sincronização durante o período.
+O experimento comprova que o uso de múltiplos processos é eficiente para esse tipo de análise fiscal pesada, especialmente porque o trabalho por linha é independente e pode ser dividido entre processos sem necessidade de sincronização durante o período. Como próximo passo, a instrumentação direta de `spawn`, `map` e `join` (detalhada na Seção 9) permitiria confirmar com medição — em vez de regressão — qual parcela exata do tempo é consumida pela inicialização dos processos.
