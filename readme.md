@@ -6,7 +6,7 @@
 **Aluno 1:** Lucas Vasconcelos Pessoa de Oliveira  
 **Aluno 2:** Joao Gabriel Lucas Pinheiro de Lima  
 
-**Data:** 10/06/2026  
+**Data:** 23/06/2026  
 
 ---
 
@@ -156,18 +156,38 @@ Os dados da bateria 6→12 mostram outra coisa: o ganho marginal de tempo por pr
 | 10 → 11   | -1,37s      |
 | 11 → 12   | -1,03s      |
 
+Essa queda contínua, sem degrau, descarta a hipótese de saturação física como causa principal e aponta para um segundo tipo de custo: o **overhead de paralelização** — o tempo gasto não no trabalho útil (ler e validar cada linha do CSV), mas na organização desse trabalho entre processos.
+
+### O que é o overhead de paralelização, neste caso
+
+Diferente do tempo computacional "puro" de processar cada uma das 16 milhões de linhas, o overhead é o custo que cada processo adicional traz consigo apenas por existir, antes de processar uma única linha. Esse custo tem três origens concretas e mensuráveis no programa:
+
+- **Custo de criação (`spawn`)**: no Windows, `multiprocessing` usa o método `spawn` em vez de `fork` (disponível apenas em sistemas Unix). Isso significa que cada worker novo reabre o interpretador Python do zero, reimportando módulos e reconstruindo seu estado interno — um custo fixo por processo que não existe em sistemas que usam `fork`.
+- **Custo de comunicação (`pickle` + IPC)**: ao final do processamento, cada worker precisa devolver seu dicionário de resultados parciais (somas, rankings, estatísticas por produto/estado/cidade/CNPJ) ao processo principal. Essa transferência exige serialização via `pickle`, que é mais lenta quando os valores envolvidos são `Decimal` em vez de tipos numéricos nativos como `float`.
+- **Custo de sincronização (`join`)**: o `pool.map()` só libera o resultado final depois que o último worker termina — o tempo total da etapa paralela é, portanto, limitado pelo processo mais lento da rodada, e não pela média.
+
+Esses três custos por processo são aproximadamente constantes (não dependem de quantas linhas aquele processo processou), enquanto o trabalho útil por processo diminui conforme mais processos dividem o mesmo arquivo. É exatamente essa proporção que se inverte conforme p cresce: com poucos processos, o overhead é irrelevante frente ao trabalho útil; com muitos processos, ele passa a representar uma fração cada vez maior do tempo total — daí a queda suave e contínua de eficiência observada nos dados, em vez de um degrau abrupto ligado a hardware.
+
 ## 10. Análise dos Resultados
 
 Os resultados mostram ganho consistente conforme o número de processos aumenta. Com 4 processos, o tempo caiu de 237,8s para 69,0s — redução de aproximadamente 71%. Com 8 processos chegou a 38,5s, e com 12 processos ao melhor resultado de 34,6s.
 
-A eficiência cai de forma suave e contínua, sem degraus abruptos: de 86,2% (4 processos) para 77,1% (8 processos) e 57,3% (12 processos). A bateria adicional de testes com 6 a 12 processos (Seção 9) ajuda a refinar essa leitura: o ajuste estatístico que melhor descreve os dados (R² = 0,986) é um modelo de Amdahl com termo de overhead por processo, compatível com o custo de `spawn` no Windows e com a serialização (`pickle`) dos resultados parciais via IPC. Isso explica por que o ganho de tempo entre 8 e 12 processos é pequeno (apenas ~4s): cada processo adicional carrega um custo de inicialização e comunicação que nunca é totalmente amortizado pelo trabalho extra que ele executa.
+A eficiência cai de forma suave e contínua, sem degraus abruptos: de 86,2% (4 processos) para 77,1% (8 processos) e 57,3% (12 processos). A bateria adicional de testes com 6 a 12 processos (Seção 9) ajuda a refinar essa leitura: o ajuste estatístico que melhor descreve os dados (R² = 0,986) é um modelo de Amdahl com termo de overhead por processo, ou seja, um modelo do tipo:
 
-**Principais fatores limitantes:**
+```
+T(p) = T_serial + T_paralelizavel / p + overhead × p
+```
 
-- Custo de `spawn` de processos no Windows (reabertura completa do interpretador por worker, sem `fork`)
-- Custo de serialização com `pickle` dos dicionários de resultado parcial (agravado pelo uso de `Decimal`)
-- Leitura de um CSV de ~1,9 GB em disco (contenção de I/O)
-- Parsing de texto e conversões `Decimal` por linha (CPU-bound pesado)
+onde o termo `overhead × p` cresce linearmente com o número de processos e absorve, de forma agregada, os três custos descritos na Seção 9 (`spawn`, `pickle`/IPC e sincronização via `join`). O ajuste estatístico estima esse overhead em aproximadamente **1,5 segundo por processo adicional**. Esse modelo é o que melhor explica por que o ganho de tempo entre 8 e 12 processos é tão pequeno (apenas ~4s): cada processo adicional carrega um custo de inicialização e comunicação que nunca é totalmente amortizado pelo trabalho extra que ele executa — a partir de certo ponto, adicionar processos retorna cada vez menos trabalho útil por segundo de overhead pago.
+
+Essa leitura também explica por que a hipótese de saturação de núcleos físicos (Seção 9) foi descartada: se o limitador fosse hardware, esperaríamos um salto concentrado na fronteira de 8→9 processos; o que se observa, em vez disso, é uma penalidade que se acumula de forma proporcional ao número de processos, independentemente de estarem ou não competindo por núcleo físico via SMT.
+
+**Principais fatores limitantes (em ordem de impacto estimado):**
+
+- **Custo de `spawn` de processos no Windows** — reabertura completa do interpretador por worker, sem `fork`; este é o componente mais provável de dominar o termo de overhead, por ser pago integralmente antes de qualquer linha ser processada
+- **Custo de serialização com `pickle`** dos dicionários de resultado parcial — agravado pelo uso de `Decimal`, que serializa mais lentamente que tipos numéricos nativos
+- **Leitura de um CSV de ~1,9 GB em disco** (contenção de I/O) — fator que não escala com o número de processos e estabelece um piso de tempo que nenhuma quantidade de paralelismo elimina
+- **Parsing de texto e conversões `Decimal` por linha** (CPU-bound pesado) — parte do trabalho útil em si, mas que compete pela mesma CPU usada pelos custos de overhead acima
 
 ---
 
