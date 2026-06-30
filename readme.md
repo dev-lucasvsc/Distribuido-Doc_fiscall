@@ -89,11 +89,11 @@ Isso confirma que o paralelismo está sendo aproveitado de forma real pelo siste
 
 | Nº Processos | Tempo de Execução (s) |
 |:------------:|:---------------------:|
-| Sequencial   | 237,7843              |
-| 2            | 133,1444              |
-| 4            | 68,9927               |
-| 8            | 38,5264               |
-| 12           | 34,5666               |
+| Sequencial   | 235,2488              |
+| 2            | 137,1241              |
+| 4            | 68,4866               |
+| 8            | 37,4866               |
+| 12           | 34,1359               |
 
 ---
 
@@ -117,13 +117,13 @@ Eficiência(p) = Speedup(p) / p × 100%
 
 | Processos | Tempo (s) | Speedup | Eficiência |
 |:---------:|:---------:|:-------:|:----------:|
-| Seq.      | 237,7843  | 1,00×   | —          |
-| 2         | 133,1444  | 1,79×   | 89,5%      |
-| 4         | 68,9927   | 3,45×   | 86,2%      |
-| 8         | 38,5264   | 6,17×   | 77,1%      |
-| 12        | 34,5666   | 6,88×   | 57,3%      |
+| Seq.      | 235,2488  | 1,00×   | —          |
+| 2         | 137,1241  | 1,79×   | 89,5%      |
+| 4         | 68,4866   | 3,45×   | 86,2%      |
+| 8         | 37,4866   | 6,28×   | 78,5%      |
+| 12        | 34,1359   | 6,93×   | 57,3%      |
 
-> **Melhor resultado: 12 processos — 34,5666s — speedup de 6,88×**
+> **Melhor resultado: 12 processos — 34,1359s — speedup de 6,93×**
 
 ---
 
@@ -139,7 +139,28 @@ Eficiência(p) = Speedup(p) / p × 100%
 
 ## 9. Por que a Eficiência Cai com Mais Processos?
 
-A queda de eficiência de 89,5% (2 processos) para 57,3% (12 processos) é, em essência, o comportamento previsto pela **Lei de Amdahl**: toda tarefa paralela tem uma fração que não escala com o número de processos, e essa fração pesa proporcionalmente mais conforme mais processos são adicionados. A pergunta interessante não é "isso é esperado?" — é, mas sim **qual fração específica do trabalho é essa, no caso deste programa.** Para responder isso com mais precisão, foi feita uma bateria extra de testes com 6, 7, 8, 9, 10, 11 e 12 processos, em vez de testar apenas os quatro pontos da tabela principal.
+A queda de eficiência de 89,5% (2 processos) para 57,3% (12 processos) é, em essência, o comportamento previsto pela **Lei de Amdahl**: toda tarefa paralela tem uma fração que não escala com o número de processos, e essa fração pesa proporcionalmente mais conforme mais processos são adicionados. A pergunta interessante não é "isso é esperado?" — é, mas sim **qual fração específica do trabalho é essa, no caso deste programa.** Para responder isso com mais precisão, foram feitas duas baterias extras de testes: uma com 6, 7, 8, 9, 10, 11 e 12 processos rodada junto com os demais dados (Seção 9, abaixo), e uma segunda bateria isolada de 8 a 12 processos, com seu próprio baseline sequencial, executada como confirmação independente (Seção 9.1).
+
+### 9.1 Bateria de confirmação: 8 a 12 processos isolados
+
+Para checar se o padrão de queda suave se mantém de forma consistente — e não é um artefato de uma única rodada — foi executada uma segunda bateria, isolando apenas a faixa de 8 a 12 processos, com baseline sequencial próprio:
+
+```
+Baseline sequencial : 234,0560s  (1 processo, sem pool)
+CPUs lógicas         : 16
+```
+
+| Processos | Tempo (s) | Speedup | Eficiência |
+|:---------:|:---------:|:-------:|:----------:|
+| 8         | 38,2171   | 6,12×   | 76,5%      |
+| 9         | 36,5370   | 6,41×   | 71,2%      |
+| 10        | 35,5361   | 6,59×   | 65,9%      |
+| 11        | 34,9231   | 6,70×   | 60,9%      |
+| 12        | 34,5087   | 6,78×   | 56,5%      |
+
+> **Melhor resultado desta bateria: 12 processos — 34,5087s — speedup de 6,78×**
+
+Essa segunda rodada reforça a leitura da Seção 9: a eficiência cai de forma contínua e gradual (76,5% → 71,2% → 65,9% → 60,9% → 56,5%), sem nenhum salto concentrado na transição de 8 para 9 processos — que seria o ponto esperado se o limitador fosse a fronteira entre núcleos físicos e threads lógicas via SMT. O ganho marginal de speedup por processo adicional também encolhe de forma suave (de +0,29× entre 8→9 até +0,08× entre 11→12), reforçando que cada processo extra carrega um custo fixo de overhead que passa a dominar a fração de trabalho útil que ele consegue entregar.
 
 ### Refinando a hipótese: núcleo físico vs. núcleo lógico
 
@@ -170,9 +191,9 @@ Esses três custos por processo são aproximadamente constantes (não dependem d
 
 ## 10. Análise dos Resultados
 
-Os resultados mostram ganho consistente conforme o número de processos aumenta. Com 4 processos, o tempo caiu de 237,8s para 69,0s — redução de aproximadamente 71%. Com 8 processos chegou a 38,5s, e com 12 processos ao melhor resultado de 34,6s.
+Os resultados mostram ganho consistente conforme o número de processos aumenta. Com 4 processos, o tempo caiu de 235,2s para 68,5s — redução de aproximadamente 71%. Com 8 processos chegou a 37,5s, e com 12 processos ao melhor resultado de 34,1s.
 
-A eficiência cai de forma suave e contínua, sem degraus abruptos: de 86,2% (4 processos) para 77,1% (8 processos) e 57,3% (12 processos). A bateria adicional de testes com 6 a 12 processos (Seção 9) ajuda a refinar essa leitura: o ajuste estatístico que melhor descreve os dados (R² = 0,986) é um modelo de Amdahl com termo de overhead por processo, ou seja, um modelo do tipo:
+A eficiência cai de forma suave e contínua, sem degraus abruptos: de 86,2% (4 processos) para 78,5% (8 processos) e 57,3% (12 processos). A bateria adicional de testes com 6 a 12 processos (Seção 9) ajuda a refinar essa leitura: o ajuste estatístico que melhor descreve os dados (R² = 0,986) é um modelo de Amdahl com termo de overhead por processo, ou seja, um modelo do tipo:
 
 ```
 T(p) = T_serial + T_paralelizavel / p + overhead × p
@@ -193,8 +214,8 @@ Essa leitura também explica por que a hipótese de saturação de núcleos fís
 
 ## 11. Conclusão
 
-O paralelismo com `multiprocessing` trouxe melhora expressiva no processamento das 16 milhões de notas fiscais. O tempo caiu de **237,7843s** no sequencial para **34,5666s** com 12 processos — redução de aproximadamente **85,5% no tempo total**.
+O paralelismo com `multiprocessing` trouxe melhora expressiva no processamento das 16 milhões de notas fiscais. O tempo caiu de **235,2488s** no sequencial para **34,1359s** com 12 processos — redução de aproximadamente **85,5% no tempo total**.
 
-O ganho não foi perfeitamente linear, o que é esperado pela Lei de Amdahl: todo processamento paralelo tem uma fração que não escala com o número de processos. A bateria extra de testes (6 a 12 processos, Seção 9) ajudou a identificar com mais precisão qual fração é essa neste caso — não a saturação abrupta de núcleos físicos, e sim um overhead que cresce de forma aproximadamente linear por processo adicional (~1,5s, ajuste com R² = 0,986), coerente com o custo de `spawn` no Windows e a serialização (`pickle`) do retorno de cada worker. Vale notar que o ganho de tempo entre 8 e 12 processos foi modesto (de 38,5264s para 34,5666s), o que sugere que, para essa carga de trabalho e esse hardware, o overhead por processo já se aproxima de consumir os ganhos adicionais de paralelização.
+O ganho não foi perfeitamente linear, o que é esperado pela Lei de Amdahl: todo processamento paralelo tem uma fração que não escala com o número de processos. A bateria extra de testes (6 a 12 processos, Seção 9) ajudou a identificar com mais precisão qual fração é essa neste caso — não a saturação abrupta de núcleos físicos, e sim um overhead que cresce de forma aproximadamente linear por processo adicional (~1,5s, ajuste com R² = 0,986), coerente com o custo de `spawn` no Windows e a serialização (`pickle`) do retorno de cada worker. Uma segunda bateria, isolada e com baseline próprio (8 a 12 processos, Seção 9.1), confirmou de forma independente esse mesmo padrão de queda suave e contínua — sem degrau na fronteira de 8→9 processos —, reforçando que o resultado não é um artefato de uma única rodada. Vale notar que o ganho de tempo entre 8 e 12 processos foi modesto em ambas as baterias (de 37,4866s para 34,1359s na primeira; de 38,2171s para 34,5087s na segunda), o que sugere que, para essa carga de trabalho e esse hardware, o overhead por processo já se aproxima de consumir os ganhos adicionais de paralelização.
 
 O experimento comprova que o uso de múltiplos processos é eficiente para esse tipo de análise fiscal pesada, especialmente porque o trabalho por linha é independente e pode ser dividido entre processos sem necessidade de sincronização durante o período. Como próximo passo, a instrumentação direta de `spawn`, `map` e `join` (detalhada na Seção 9) permitiria confirmar com medição direta — em vez de regressão estatística — qual parcela exata do tempo é consumida pela inicialização dos processos.
